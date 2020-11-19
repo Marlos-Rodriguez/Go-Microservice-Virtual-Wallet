@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option go_package = ".;grpc";
+
+package grpc;
+
+service MovementService {
+    rpc CreateMovement (MovementRequest) returns (MovementResponse) {}
+}
+
+message MovementRequest {
+    string relation = 1;
+    string Change = 2;
+    string Origin = 3;
+}
+
+message MovementResponse {
+    bool sucess = 1;
+}
