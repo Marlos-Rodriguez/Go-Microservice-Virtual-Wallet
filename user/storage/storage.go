@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,15 +23,69 @@ type relationChannel struct {
 
 //NewUserStorageService Create a new storage user service
 func NewUserStorageService(newDB *gorm.DB) *UserStorageService {
+	newDB.AutoMigrate(&models.User{}, &models.Profile{}, &models.Relation{})
+
+	/*
+		testUser := &models.User{
+			UserID:    uuid.New(),
+			UserName:  "Marlos",
+			Balance:   10.2,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			IsActive:  true,
+			Profile: models.Profile{
+				FirstName: "Marlos",
+				LastName:  "Rodriguez",
+				Email:     "marlos2811@hotmail.com",
+				Password:  "123456",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+				IsActive:  true,
+			},
+		}
+
+		testUser.Profile.UserID = testUser.UserID
+
+		testUser2 := &models.User{
+			UserID:    uuid.New(),
+			UserName:  "Manuel",
+			Balance:   10.2,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			IsActive:  true,
+			Profile: models.Profile{
+				FirstName: "Marlos",
+				LastName:  "Rodriguez",
+				Email:     "marlos28@hotmail.com",
+				Password:  "123456",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+				IsActive:  true,
+			},
+		}
+
+		testUser2.Profile.UserID = testUser2.UserID
+
+		newDB.Create(&testUser)
+		newDB.Create(&testUser.Profile)
+		newDB.Create(&testUser2)
+		newDB.Create(&testUser2.Profile)
+	*/
+
 	return &UserStorageService{db: newDB}
 }
 
 //GetUser Get basic user info
 func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
-	//Get info from DB
-	var userDB *models.User
 
-	u.db.Where("user_id = ?", ID).First(&userDB)
+	//Get info from DB
+	var userDB *models.User = new(models.User)
+
+	if u.db == nil {
+		log.Println("DB is nil")
+	}
+
+	u.db.Where("user_id = ?", &ID).First(&userDB)
 
 	if err := u.db.Error; err != nil {
 		userResponse := &models.UserResponse{}
@@ -53,7 +108,7 @@ func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 //GetProfileUser Get the profile info
 func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileResponse, error) {
 	//Get info from DB
-	var profileDB *models.Profile
+	var profileDB *models.Profile = new(models.Profile)
 
 	u.db.Where("user_id = ?", ID).First(&profileDB)
 
@@ -78,14 +133,33 @@ func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileRespo
 }
 
 //ModifyUser This modify the Complete User, this must not modify the Username or Email
-func (u *UserStorageService) ModifyUser(m *models.User) (bool, error) {
+func (u *UserStorageService) ModifyUser(m *models.User, ID string, newUsername string) (bool, error) {
 	//encrypt Password
 	if len(m.Profile.Password) > 0 || m.Profile.Password != "" {
 		m.Profile.Password, _ = EncryptPassword(m.Profile.Password)
 	}
 
+	if newUsername != "" || len(newUsername) > 0 {
+		if sucess, err := u.ModifyUsername(ID, m.UserName, newUsername); err != nil || sucess == false {
+			return false, err
+		}
+		m.UserName = ""
+	}
+
+	if m.Profile.Email != "" || len(m.Profile.Email) > 0 {
+		if sucess, err := u.ModifyEmail(ID, m.Profile.Email); err != nil || sucess == false {
+			return false, err
+		}
+		m.Profile.Email = ""
+	}
+
 	//Modify in DB
-	if err := u.db.Save(&m).Error; err != nil {
+	if err := u.db.Model(&models.User{}).Where("user_id = ?", ID).Update(&m).Error; err != nil {
+		return false, err
+	}
+
+	//Modify in DB
+	if err := u.db.Model(&models.Profile{}).Where("user_id = ?", ID).Update(&m.Profile).Error; err != nil {
 		return false, err
 	}
 
@@ -93,13 +167,26 @@ func (u *UserStorageService) ModifyUser(m *models.User) (bool, error) {
 }
 
 //ModifyUsername Change the username if that not already exits
-func (u *UserStorageService) ModifyUsername(ID string, newUsername string) (bool, error) {
-	var userDB *models.User
+func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, newUsername string) (bool, error) {
+	var userDB *models.User = new(models.User)
 	//Check if exits a record with that username
 	if err := u.db.Where("user_name = ?", newUsername).First(&userDB).Error; err != nil {
 		//If not exits update the username
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			//change username
 			err = u.db.Model(&models.User{}).Where("user_id = ?", ID).Update("user_name", newUsername).Error
+
+			if err != nil {
+				return false, err
+			}
+
+			err = u.db.Model(&models.Relation{}).Where("from_name = ?", currentUsername).Update("from_name", newUsername).Error
+
+			if err != nil {
+				return false, err
+			}
+
+			err = u.db.Model(&models.Relation{}).Where("to_name = ?", currentUsername).Update("to_name", newUsername).Error
 
 			if err != nil {
 				return false, err
@@ -116,10 +203,10 @@ func (u *UserStorageService) ModifyUsername(ID string, newUsername string) (bool
 //ModifyEmail Change the username if that not already exits
 func (u *UserStorageService) ModifyEmail(ID string, newEmail string) (bool, error) {
 	//Check if exits a record with that email
-	if err := u.db.Where("user_name = ?", newEmail).First(&models.User{}).Error; err != nil {
+	if err := u.db.Where("email = ?", newEmail).First(&models.Profile{}).Error; err != nil {
 		//If not exits update the username
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			err = u.db.Model(&models.User{}).Where("user_id = ?", ID).Update("email", newEmail).Error
+			err = u.db.Model(&models.Profile{}).Where("user_id = ?", ID).Update("email", newEmail).Error
 
 			if err != nil {
 				return false, err
@@ -134,21 +221,62 @@ func (u *UserStorageService) ModifyEmail(ID string, newEmail string) (bool, erro
 }
 
 //CheckExistingUser Check existing User
-func (u *UserStorageService) CheckExistingUser(ID string) (bool, error) {
-	if err := u.db.Where("user_id = ?", ID).First(&models.User{}).Error; err != nil {
+func (u *UserStorageService) CheckExistingUser(ID string) (bool, bool, error) {
+
+	var userDB *models.User = new(models.User)
+
+	var (
+		exits    bool
+		isActive bool
+	)
+
+	if err := u.db.Where("user_id = ?", ID).First(userDB).Error; err != nil {
+		exits = false
+		isActive = false
+
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return true, nil
+			return exits, isActive, errors.New("User Not exists")
 		}
-		return false, err
+		return exits, isActive, err
 	}
 
-	return false, errors.New("User already exists")
+	exits = true
+
+	if !userDB.IsActive {
+		isActive = false
+		return exits, isActive, nil
+	}
+
+	isActive = true
+
+	return exits, isActive, nil
+}
+
+//GetIDName Get the ID from the username
+func (u *UserStorageService) GetIDName(username string, email string) (string, error) {
+	var userDB *models.User = new(models.User)
+
+	if err := u.db.Where("username = ?", username).First(&userDB).Error; err != nil {
+		return "", err
+	}
+
+	if len(userDB.UserID.String()) > 0 || userDB.UserID.String() != "" {
+		return userDB.UserID.String(), nil
+	}
+
+	var profileDB *models.Profile = new(models.Profile)
+
+	if err := u.db.Where("email = ?", email).First(&profileDB).Error; err != nil {
+		return "", err
+	}
+
+	return profileDB.UserID.String(), nil
 }
 
 //GetRelations Get relations from one User
 func (u *UserStorageService) GetRelations(ID string, page int) ([]*models.RelationReponse, error) {
 	//Get info from DB
-	var relationDB []*models.Relation
+	var relationDB []*models.Relation = []*models.Relation{new(models.Relation)}
 
 	limit := page * 20
 
@@ -181,9 +309,10 @@ func (u *UserStorageService) GetRelations(ID string, page int) ([]*models.Relati
 }
 
 //AddRelation Create a new Relation
-func (u *UserStorageService) AddRelation(r *models.RelationRequest, fromID string) (bool, error) {
+func (u *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error) {
 
-	exits, err := u.CheckExistingRelation(r.FromName, r.ToName)
+	//Check if exits a relation but is not mutual
+	exits, err := u.CheckMutualRelation(r.FromName, r.ToName)
 
 	//If there was an error but the relation exits
 	if err != nil && exits {
@@ -195,65 +324,65 @@ func (u *UserStorageService) AddRelation(r *models.RelationRequest, fromID strin
 		return true, nil
 	}
 
-	//Create the channels
-	fromChan := make(chan relationChannel, 1)
-	toChan := make(chan relationChannel, 1)
+	//Check if exits the relation in DB
+	exits, err = u.CheckExistingRelation(r.FromName, r.ToName)
 
-	//Check if ID is pass and execute the gorutine
-	if len(fromID) < 0 || fromID == "" {
-		go u.getID(r.FromName, r.FromEmail, fromChan)
+	//If there was an error
+	if err != nil {
+		return false, err
 	}
 
-	//Execute the gorutine for toUser
-	go u.getID(r.FromName, r.FromEmail, toChan)
+	//If the User exits
+	if exits == true && err == nil {
+		return false, errors.New("Relations already exits")
+	}
 
-	//Create the Users variables
-	var fromByteID uuid.UUID
-	var toByteID uuid.UUID
+	//Get the other user ID
+	var toID string
 
-	//If the user pass the ID
-	if len(fromID) > 0 || fromID != "" {
-		fromByteID, err = uuid.Parse(fromID)
-		if err != nil {
-			return false, err
-		}
+	toID, err = u.GetIDName(r.ToName, r.ToEmail)
+
+	//If there was an error
+	if err != nil {
+		return false, err
+	}
+
+	if len(toID) < 0 || toID == "" {
+		return false, errors.New("Error in Get the ID of To user")
+	}
+
+	//Check if exits another the new user
+	var isActive bool
+
+	exits, isActive, err = u.CheckExistingUser(toID)
+
+	if err != nil {
+		return false, err
+	}
+
+	if !exits || !isActive {
+		return false, errors.New("User no exits or is not active")
+	}
+
+	fromID, err := uuid.Parse(r.FromID)
+	newtoID, err := uuid.Parse(toID)
+
+	if err != nil {
+		return false, errors.New("Error converting the ID in DB")
 	}
 
 	//Create the new relation with the other info
 	newRelation := &models.Relation{
 		RelationID: uuid.New(),
+		FromUser:   fromID,
 		FromName:   r.FromName,
+		ToUser:     newtoID,
 		ToName:     r.ToName,
 		Mutual:     false,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 		IsActive:   true,
 	}
-
-	//Select for the channels
-	select {
-	case fromIDDB := <-fromChan:
-		//If the fromID is empty and not errors
-		if len(fromID) < 0 || fromID != "" || fromIDDB.Err != nil {
-			fromByteID, err = uuid.Parse(fromIDDB.ID)
-			if err != nil {
-				return false, err
-			}
-		}
-	case toID := <-toChan:
-		if toID.Err != nil {
-			return false, toID.Err
-		}
-		toByteID, err = uuid.Parse(toID.ID)
-
-		if err != nil {
-			return false, err
-		}
-	}
-
-	//assing the new ID
-	newRelation.FromUser = fromByteID
-	newRelation.ToUser = toByteID
 
 	//Create relation in DB
 	if err := u.db.Create(&newRelation).Error; err != nil {
@@ -263,70 +392,65 @@ func (u *UserStorageService) AddRelation(r *models.RelationRequest, fromID strin
 	return true, nil
 }
 
-//CheckExistingRelation Check if exits a relation and if is not mutual, If is not mutual update it
+//CheckExistingRelation Check if exits any relations before create
 func (u *UserStorageService) CheckExistingRelation(fromUser string, toUser string) (bool, error) {
 	//Check values
 	if len(fromUser) < 0 || len(toUser) < 0 {
 		return false, errors.New("Must send boths variables")
 	}
 
-	var relationDB *models.Relation
+	u.db.Where(&models.Relation{FromName: fromUser, ToName: toUser}).Or(&models.Relation{FromName: toUser, ToName: fromUser, Mutual: true})
 
-	if err := u.db.Where("from_user = ? AND to_user = ? AND mutual = false", toUser, fromUser).First(&relationDB).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	if u.db.Error != nil {
+		if errors.Is(u.db.Error, gorm.ErrRecordNotFound) {
 			return false, nil
 		}
-
-		return false, err
-	}
-
-	relationDB.Mutual = true
-
-	if err := u.db.Save(&relationDB); err != nil {
-		return true, err.Error
+		return false, u.db.Error
 	}
 
 	return true, nil
 }
 
-func (u *UserStorageService) getID(username string, email string, relationChan chan relationChannel) {
-	//Get ID
-	ID, sucess, err := u.GetUserFromNameEmail(username, email)
-
-	//Create internal Channel
-	internalChan := new(relationChannel)
-
-	if sucess != true || err != nil {
-		internalChan.Err = err
-	}
-
-	internalChan.Err = nil
-	internalChan.ID = ID
-
-	relationChan <- *internalChan
-}
-
-//GetUserFromNameEmail Get the ID of User from Username and email
-func (u *UserStorageService) GetUserFromNameEmail(username string, email string) (string, bool, error) {
+//CheckMutualRelation Check if exits a relation and if is not mutual, If is not mutual update it
+func (u *UserStorageService) CheckMutualRelation(fromUser string, toUser string) (bool, error) {
 	//Check values
-	if len(username) < 0 || len(email) < 0 {
-		return "", false, errors.New("Must send boths variables")
+	if len(fromUser) < 0 || len(toUser) < 0 {
+		return false, errors.New("Must send boths variables")
 	}
 
-	//Get info from
-	var userDB *models.User
-	if err := u.db.Where("user_name = ?", username).First(&userDB).Error; err != nil {
+	//If the relations already exits with other user updated to mutual
+	err := u.db.Model(&models.Relation{}).Where(&models.Relation{FromName: toUser, ToName: fromUser, Mutual: false}).Update("mutual", true).Error
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", false, errors.New("User not found")
+			return false, nil
 		}
-		return "", false, errors.New("Error in Get the User")
+
+		return true, err
 	}
 
-	if userDB.Profile.Email != email {
-		return "", false, errors.New("the username and email not mach")
-	}
-
-	return userDB.UserID.String(), true, nil
+	return true, nil
 }
 
-//Here must create a funtion to deactive a relation
+//DeactivateRelation Deactive the relation in DB
+func (u *UserStorageService) DeactivateRelation(FromID string, ToID string) (bool, error) {
+	//Check values
+	if len(FromID) < 0 || len(ToID) < 0 {
+		return false, errors.New("Must send boths variables")
+	}
+
+	var relationDB *models.Relation = new(models.Relation)
+
+	u.db.Where("from_user = ? AND to_user = ?", FromID, ToID).Or("from_user = ? AND to_user = ? AND mutual = true", ToID, FromID).First(&relationDB)
+
+	if u.db.Error != nil {
+		return false, u.db.Error
+	}
+
+	relationDB.IsActive = false
+
+	if err := u.db.Save(&relationDB).Error; err != nil {
+		return false, err
+	}
+
+	return true, nil
+}

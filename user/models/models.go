@@ -52,30 +52,33 @@ type Relation struct {
 
 //UserRequest struct
 type UserRequest struct {
-	UserName  string    `json:"user_name"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Email     string    `json:"email"`
-	Password  string    `json:"password"`
-	Birthday  time.Time `json:"birthday"`
-	Biography string    `json:"biography"`
+	CurrentUserName string    `json:"current_user_name"`
+	NewUsername     string    `json:"new_user_name"`
+	FirstName       string    `json:"first_name"`
+	LastName        string    `json:"last_name"`
+	Email           string    `json:"email"`
+	Password        string    `json:"password"`
+	Birthday        time.Time `json:"birthday"`
+	Biography       string    `json:"biography"`
 }
 
 //RelationRequest struct
 type RelationRequest struct {
-	FromName  string `json:"fromName"`
-	FromEmail string `json:"fromEmail"`
-	ToName    string `json:"toName"`
-	ToEmail   string `json:"email"`
+	FromID    string `json:"from_ID"`
+	FromName  string `json:"from_name"`
+	FromEmail string `json:"from_email"`
+	ToID      string `json:"to_ID"`
+	ToName    string `json:"to_name"`
+	ToEmail   string `json:"to_email"`
 }
 
 //UserResponse struct
 type UserResponse struct {
-	UserID           uuid.UUID                        `json:"userId"`
-	UserName         string                           `json:"username"`
-	Balance          float64                          `json:"balance"`
-	Avatar           string                           `json:"avatar"`
-	LastTransactions [20]TSModels.TransactionResponse `json:"transactions,omitempty"`
+	UserID           uuid.UUID                      `json:"userId"`
+	UserName         string                         `json:"username"`
+	Balance          float64                        `json:"balance"`
+	Avatar           string                         `json:"avatar"`
+	LastTransactions []TSModels.TransactionResponse `json:"transactions,omitempty"`
 }
 
 //UserProfileResponse struct

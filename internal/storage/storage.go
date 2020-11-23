@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"github.com/jinzhu/gorm"
+	//Autoload the env
+	_ "github.com/joho/godotenv/autoload"
 
 	//Postgres Driver imported
 	_ "github.com/lib/pq"
@@ -22,13 +24,21 @@ var (
 
 //ConnectDB connect to Postgres DB
 func ConnectDB() *gorm.DB {
+	if host == "" {
+		log.Fatalln("Error loading ENV")
+		return nil
+	}
+
 	portInt, err := strconv.Atoi(port)
 
 	if err != nil {
 		log.Fatalln("Error in connect the DB " + err.Error())
 		return nil
 	}
-	DB, err := gorm.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, portInt, user, password, name))
+
+	var DB *gorm.DB
+
+	DB, err = gorm.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, portInt, user, password, name))
 
 	if err != nil {
 		log.Fatalln("Error in connect the DB " + err.Error())

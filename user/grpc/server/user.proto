@@ -20,8 +20,8 @@ message UserResponse {
 }
 
 message RelationRequest {
-    string fromID = 1;
-    string toID = 2;
+    string fromUsername = 1;
+    string toUsername = 2;
 }
 
 message RelationResponse {
