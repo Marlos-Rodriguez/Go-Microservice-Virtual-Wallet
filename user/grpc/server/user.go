@@ -6,6 +6,7 @@ import (
 	"golang.org/x/net/context"
 
 	internal "github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/storage"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/storage"
 	"github.com/jinzhu/gorm"
 )
@@ -34,6 +35,8 @@ func (s *Server) CheckUser(ctx context.Context, request *UserRequest) (*UserResp
 		return &UserResponse{Exits: false, Active: false}, err
 	}
 
+	storageService.CloseDB()
+
 	return &UserResponse{Exits: exits, Active: isActive}, nil
 }
 
@@ -51,5 +54,26 @@ func (s *Server) CheckRelation(ctx context.Context, request *RelationRequest) (*
 		return &RelationResponse{Exits: false}, err
 	}
 
+	storageService.CloseDB()
+
 	return &RelationResponse{Exits: exits}, nil
+}
+
+//ChangeAvatar Change the avatar in DB
+func (s *Server) ChangeAvatar(ctx context.Context, request *AvatarName) (*AvatarResponse, error) {
+	storageService := getStorageService()
+
+	if len(request.Name) < 0 || request.Name == "" {
+		return &AvatarResponse{Sucess: false}, errors.New("Must send the avatar name")
+	}
+
+	var userDB *models.User = new(models.User)
+
+	userDB.Profile.Avatar = request.Name
+
+	if sucess, err := storageService.ModifyUser(userDB, "", ""); sucess == false || err != nil {
+		return &AvatarResponse{Sucess: false}, err
+	}
+
+	return &AvatarResponse{Sucess: true}, nil
 }

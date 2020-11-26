@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 
+	grpc "github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/grpc/client"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 )
 
@@ -25,54 +26,12 @@ type relationChannel struct {
 func NewUserStorageService(newDB *gorm.DB) *UserStorageService {
 	newDB.AutoMigrate(&models.User{}, &models.Profile{}, &models.Relation{})
 
-	/*
-		testUser := &models.User{
-			UserID:    uuid.New(),
-			UserName:  "Marlos",
-			Balance:   10.2,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-			IsActive:  true,
-			Profile: models.Profile{
-				FirstName: "Marlos",
-				LastName:  "Rodriguez",
-				Email:     "marlos2811@hotmail.com",
-				Password:  "123456",
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-				IsActive:  true,
-			},
-		}
-
-		testUser.Profile.UserID = testUser.UserID
-
-		testUser2 := &models.User{
-			UserID:    uuid.New(),
-			UserName:  "Manuel",
-			Balance:   10.2,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-			IsActive:  true,
-			Profile: models.Profile{
-				FirstName: "Marlos",
-				LastName:  "Rodriguez",
-				Email:     "marlos28@hotmail.com",
-				Password:  "123456",
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-				IsActive:  true,
-			},
-		}
-
-		testUser2.Profile.UserID = testUser2.UserID
-
-		newDB.Create(&testUser)
-		newDB.Create(&testUser.Profile)
-		newDB.Create(&testUser2)
-		newDB.Create(&testUser2.Profile)
-	*/
-
 	return &UserStorageService{db: newDB}
+}
+
+//CloseDB Close DB
+func (u *UserStorageService) CloseDB() {
+	u.db.Close()
 }
 
 //GetUser Get basic user info
@@ -88,8 +47,7 @@ func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 	u.db.Where("user_id = ?", &ID).First(&userDB)
 
 	if err := u.db.Error; err != nil {
-		userResponse := &models.UserResponse{}
-		return userResponse, err
+		return nil, err
 	}
 
 	//Here have to get the last transactions from the transaction service
@@ -100,6 +58,16 @@ func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 		UserName: userDB.UserName,
 		Balance:  userDB.Balance,
 		Avatar:   userDB.Profile.Avatar,
+	}
+
+	succes, err := grpc.CreateMovement("User & Transactions", "Get info", "User Service")
+
+	if err != nil {
+		return nil, err
+	}
+
+	if succes == false {
+		log.Fatalln("Error in Create a movement")
 	}
 
 	return userResponse, nil
@@ -113,8 +81,7 @@ func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileRespo
 	u.db.Where("user_id = ?", ID).First(&profileDB)
 
 	if err := u.db.Error; err != nil {
-		profileResponse := &models.UserProfileResponse{}
-		return profileResponse, err
+		return nil, err
 	}
 
 	//Assing the info for response
@@ -127,6 +94,17 @@ func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileRespo
 		Biography: profileDB.Biography,
 		CreatedAt: profileDB.CreatedAt,
 		UpdatedAt: profileDB.UpdatedAt,
+	}
+
+	//Create the movement in DB
+	succes, err := grpc.CreateMovement("User & Profile", "Get info Profile", "User Service")
+
+	if err != nil {
+		return nil, err
+	}
+
+	if succes == false {
+		log.Fatalln("Error in Create a movement")
 	}
 
 	return profileResponse, nil
