@@ -19,6 +19,9 @@ func NewGRPCServer() {
 
 	grpcServer := grpc.NewServer()
 
+	MoveServer.StartDB()
+	defer MoveServer.CloseDB()
+
 	MoveServer.RegisterMovementServiceServer(grpcServer, &s)
 
 	if err := grpcServer.Serve(lis); err != nil {

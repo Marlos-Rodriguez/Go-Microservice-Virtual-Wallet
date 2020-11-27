@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	log.Println("Start gRPC Server")
+	log.Println("Start Movement gRPC Server")
 
 	server.NewGRPCServer()
 }

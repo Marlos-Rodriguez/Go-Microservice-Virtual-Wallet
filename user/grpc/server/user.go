@@ -48,7 +48,7 @@ func (s *Server) CheckRelation(ctx context.Context, request *RelationRequest) (*
 		return &RelationResponse{Exits: false}, errors.New("Must send ID")
 	}
 
-	exits, err := storageService.CheckExistingRelation(request.FromUsername, request.ToUsername)
+	exits, err := storageService.CheckExistingRelation(request.FromUsername, request.ToUsername, false)
 
 	if err != nil {
 		return &RelationResponse{Exits: false}, err

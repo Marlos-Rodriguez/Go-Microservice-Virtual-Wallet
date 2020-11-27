@@ -60,7 +60,9 @@ func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 		Avatar:   userDB.Profile.Avatar,
 	}
 
-	succes, err := grpc.CreateMovement("User & Transactions", "Get info", "User Service")
+	var change string = "Get info of: " + userDB.UserName
+
+	succes, err := grpc.CreateMovement("User & Transactions", change, "User Service")
 
 	if err != nil {
 		return nil, err
@@ -96,8 +98,10 @@ func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileRespo
 		UpdatedAt: profileDB.UpdatedAt,
 	}
 
+	var change string = "Get info Profile of: " + profileDB.UserID.String()
+
 	//Create the movement in DB
-	succes, err := grpc.CreateMovement("User & Profile", "Get info Profile", "User Service")
+	succes, err := grpc.CreateMovement("User & Profile", change, "User Service")
 
 	if err != nil {
 		return nil, err
@@ -112,9 +116,13 @@ func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileRespo
 
 //ModifyUser This modify the Complete User, this must not modify the Username or Email
 func (u *UserStorageService) ModifyUser(m *models.User, ID string, newUsername string) (bool, error) {
+	var change string
+
 	//encrypt Password
 	if len(m.Profile.Password) > 0 || m.Profile.Password != "" {
 		m.Profile.Password, _ = EncryptPassword(m.Profile.Password)
+
+		change += "User change password "
 	}
 
 	if newUsername != "" || len(newUsername) > 0 {
@@ -131,14 +139,26 @@ func (u *UserStorageService) ModifyUser(m *models.User, ID string, newUsername s
 		m.Profile.Email = ""
 	}
 
-	//Modify in DB
+	//Modify User in DB
 	if err := u.db.Model(&models.User{}).Where("user_id = ?", ID).Update(&m).Error; err != nil {
 		return false, err
 	}
 
-	//Modify in DB
+	//Modify in Profile DB
 	if err := u.db.Model(&models.Profile{}).Where("user_id = ?", ID).Update(&m.Profile).Error; err != nil {
 		return false, err
+	}
+
+	change += "& Modify user " + m.UserID.String()
+
+	succes, err := grpc.CreateMovement("User & Profile", change, "User Service")
+
+	if err != nil {
+		return false, err
+	}
+
+	if succes == false {
+		log.Fatalln("Error in Create a movement")
 	}
 
 	return true, nil
@@ -158,6 +178,18 @@ func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 				return false, err
 			}
 
+			var change string = "Modify UserName from " + currentUsername + " to " + newUsername
+
+			succes, err := grpc.CreateMovement("User", change, "User Service")
+
+			if err != nil {
+				return false, err
+			}
+
+			if succes == false {
+				log.Fatalln("Error in Create a movement")
+			}
+
 			err = u.db.Model(&models.Relation{}).Where("from_name = ?", currentUsername).Update("from_name", newUsername).Error
 
 			if err != nil {
@@ -168,6 +200,16 @@ func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 
 			if err != nil {
 				return false, err
+			}
+
+			succes, err = grpc.CreateMovement("Relations", "Modify UserName in relations: "+currentUsername, "User Service")
+
+			if err != nil {
+				return false, err
+			}
+
+			if succes == false {
+				log.Fatalln("Error in Create a movement")
 			}
 
 			return true, nil
@@ -188,6 +230,16 @@ func (u *UserStorageService) ModifyEmail(ID string, newEmail string) (bool, erro
 
 			if err != nil {
 				return false, err
+			}
+
+			succes, err := grpc.CreateMovement("Profile", "Modify Email", "User Service")
+
+			if err != nil {
+				return false, err
+			}
+
+			if succes == false {
+				log.Fatalln("Error in Create a movement")
 			}
 
 			return true, nil
@@ -303,10 +355,13 @@ func (u *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error
 	}
 
 	//Check if exits the relation in DB
-	exits, err = u.CheckExistingRelation(r.FromName, r.ToName)
+	exits, err = u.CheckExistingRelation(r.FromName, r.ToName, true)
 
 	//If there was an error
 	if err != nil {
+		if errors.Is(err, errors.New("The relation was reactived")) {
+			return true, nil
+		}
 		return false, err
 	}
 
@@ -342,6 +397,8 @@ func (u *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error
 		return false, errors.New("User no exits or is not active")
 	}
 
+	//Convert the ID
+
 	fromID, err := uuid.Parse(r.FromID)
 	newtoID, err := uuid.Parse(toID)
 
@@ -367,23 +424,47 @@ func (u *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error
 		return false, err
 	}
 
+	var change string = "Create a new Relation between " + newRelation.FromName + " & " + newRelation.ToName
+
+	succes, err := grpc.CreateMovement("Relations", change, "User Service")
+
+	if err != nil {
+		return false, err
+	}
+
+	if succes == false {
+		log.Fatalln("Error in Create a movement")
+	}
+
 	return true, nil
 }
 
 //CheckExistingRelation Check if exits any relations before create
-func (u *UserStorageService) CheckExistingRelation(fromUser string, toUser string) (bool, error) {
+func (u *UserStorageService) CheckExistingRelation(fromUser string, toUser string, active bool) (bool, error) {
 	//Check values
 	if len(fromUser) < 0 || len(toUser) < 0 {
 		return false, errors.New("Must send boths variables")
 	}
 
-	u.db.Where(&models.Relation{FromName: fromUser, ToName: toUser}).Or(&models.Relation{FromName: toUser, ToName: fromUser, Mutual: true})
+	var relationDB *models.Relation = new(models.Relation)
 
-	if u.db.Error != nil {
-		if errors.Is(u.db.Error, gorm.ErrRecordNotFound) {
+	err := u.db.Where(&models.Relation{FromName: fromUser, ToName: toUser}).Or(&models.Relation{FromName: toUser, ToName: fromUser, Mutual: true}).First(&relationDB).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, nil
 		}
-		return false, u.db.Error
+		return false, err
+	}
+
+	//If pass the variable and the relation is not active, reactive the relation
+	if active == true && relationDB.IsActive == false {
+		err = u.db.Model(&models.Relation{}).Where(&models.Relation{RelationID: relationDB.RelationID, IsActive: false}).Update("is_active", true).Error
+		if err != nil {
+			return false, err
+		}
+
+		return true, errors.New("The relation was reactived")
 	}
 
 	return true, nil
@@ -404,6 +485,16 @@ func (u *UserStorageService) CheckMutualRelation(fromUser string, toUser string)
 		}
 
 		return true, err
+	}
+
+	succes, err := grpc.CreateMovement("Relations", "Update relation to mutual", "User Service")
+
+	if err != nil {
+		return false, err
+	}
+
+	if succes == false {
+		log.Fatalln("Error in Create a movement")
 	}
 
 	return true, nil
@@ -428,6 +519,16 @@ func (u *UserStorageService) DeactivateRelation(FromID string, ToID string) (boo
 
 	if err := u.db.Save(&relationDB).Error; err != nil {
 		return false, err
+	}
+
+	succes, err := grpc.CreateMovement("Relations", "Deactive Relation: "+relationDB.RelationID.String(), "User Service")
+
+	if err != nil {
+		return false, err
+	}
+
+	if succes == false {
+		log.Fatalln("Error in Create a movement")
 	}
 
 	return true, nil

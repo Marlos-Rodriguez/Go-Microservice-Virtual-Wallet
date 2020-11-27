@@ -1,17 +1,35 @@
 package grpc
 
 import (
+	"log"
 	"time"
 
 	internalDB "github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/storage"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/movements/models"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/movements/storage"
 	"github.com/google/uuid"
+	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 )
 
 //Server Movement
 type Server struct{}
+
+var db *gorm.DB
+
+//StartDB start the db for gRPC
+func StartDB() {
+	db = internalDB.ConnectDB()
+
+	if db == nil {
+		log.Fatalln("DB no conneted")
+	}
+}
+
+//CloseDB close the db for gRPC
+func CloseDB() {
+	db.Close()
+}
 
 //CreateMovement Create a New movement Server method
 func (s *Server) CreateMovement(ctx context.Context, move *MovementRequest) (*MovementResponse, error) {
@@ -23,9 +41,7 @@ func (s *Server) CreateMovement(ctx context.Context, move *MovementRequest) (*Mo
 		CreatedAt:  time.Now(),
 	}
 
-	newDB := internalDB.ConnectDB()
-
-	DBService := storage.NewMovementStorageService(newDB)
+	DBService := storage.NewMovementStorageService(db)
 
 	success, err := DBService.NewMovement(&newMove)
 
