@@ -3,6 +3,7 @@ module github.com/Marlos-Rodriguez/go-postgres-wallet-back
 go 1.15
 
 require (
+	github.com/go-redis/redis/v8 v8.4.0
 	github.com/gofiber/fiber/v2 v2.2.0
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.1.2

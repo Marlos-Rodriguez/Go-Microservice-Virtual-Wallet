@@ -3,8 +3,10 @@ package server
 import (
 	"errors"
 
+	"github.com/go-redis/redis/v8"
 	"golang.org/x/net/context"
 
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/cache"
 	internal "github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/storage"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/storage"
@@ -17,8 +19,9 @@ type Server struct {
 
 func getStorageService() *storage.UserStorageService {
 	var DB *gorm.DB = internal.ConnectDB()
+	var RDB *redis.Client = cache.NewRedisClient()
 
-	return storage.NewUserStorageService(DB)
+	return storage.NewUserStorageService(DB, RDB)
 }
 
 //CheckUser check if the user exits

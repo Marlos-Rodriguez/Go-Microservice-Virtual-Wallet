@@ -1,10 +1,13 @@
 package storage
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 
@@ -14,7 +17,8 @@ import (
 
 //UserStorageService struct
 type UserStorageService struct {
-	db *gorm.DB
+	db  *gorm.DB
+	rdb *redis.Client
 }
 
 type relationChannel struct {
@@ -23,26 +27,47 @@ type relationChannel struct {
 }
 
 //NewUserStorageService Create a new storage user service
-func NewUserStorageService(newDB *gorm.DB) *UserStorageService {
+func NewUserStorageService(newDB *gorm.DB, newRDB *redis.Client) *UserStorageService {
 	newDB.AutoMigrate(&models.User{}, &models.Profile{}, &models.Relation{})
 
-	return &UserStorageService{db: newDB}
+	return &UserStorageService{db: newDB, rdb: newRDB}
 }
 
-//CloseDB Close DB
+//CloseDB Close DB for GRPC
 func (u *UserStorageService) CloseDB() {
 	u.db.Close()
+	u.rdb.Close()
 }
 
 //GetUser Get basic user info
 func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 
-	//Get info from DB
+	val := u.rdb.Get(context.Background(), "User:"+ID)
+
+	err := val.Err()
+
+	if err != nil && err != redis.Nil {
+		log.Println("Error in geting the cache" + err.Error())
+	}
+
 	var userDB *models.User = new(models.User)
 
-	if u.db == nil {
-		log.Println("DB is nil")
+	if err != redis.Nil {
+		userBytes, _ := val.Bytes()
+		json.Unmarshal(userBytes, &userDB)
+
+		//Assing the info for response
+		userResponse := &models.UserResponse{
+			UserID:   userDB.UserID,
+			UserName: userDB.UserName,
+			Balance:  userDB.Balance,
+			Avatar:   userDB.Profile.Avatar,
+		}
+
+		return userResponse, nil
 	}
+
+	//Get info from DB
 
 	u.db.Where("user_id = ?", &ID).First(&userDB)
 
@@ -65,11 +90,23 @@ func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 	succes, err := grpc.CreateMovement("User & Transactions", change, "User Service")
 
 	if err != nil {
-		return nil, err
+		log.Println("Error in Create a movement: " + err.Error())
 	}
 
 	if succes == false {
-		log.Fatalln("Error in Create a movement")
+		log.Println("Error in Create a movement")
+	}
+
+	//Set in Redis for Cache
+	redisUser, err := json.Marshal(userDB)
+
+	if err != nil {
+		log.Println("Error in Marshal the user" + err.Error())
+	}
+	status := u.rdb.Set(context.Background(), "User:"+userDB.UserID.String(), redisUser, time.Hour*72)
+
+	if status.Err() != nil {
+		log.Println("Error in set in the cache " + status.Err().Error())
 	}
 
 	return userResponse, nil
@@ -77,9 +114,36 @@ func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 
 //GetProfileUser Get the profile info
 func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileResponse, error) {
-	//Get info from DB
+	//Get info from Cache
 	var profileDB *models.Profile = new(models.Profile)
 
+	val := u.rdb.Get(context.Background(), "Profile:"+ID)
+
+	err := val.Err()
+
+	if err != nil && err != redis.Nil {
+		log.Println("Error in get the cache " + err.Error())
+	}
+
+	if err != redis.Nil {
+		userBytes, _ := val.Bytes()
+		json.Unmarshal(userBytes, &profileDB)
+
+		//Assing the info for response
+		profileResponse := &models.UserProfileResponse{
+			UserID:    profileDB.UserID,
+			FirstName: profileDB.FirstName,
+			LastName:  profileDB.LastName,
+			Email:     profileDB.Email,
+			Birthday:  profileDB.Birthday,
+			Biography: profileDB.Biography,
+			CreatedAt: profileDB.CreatedAt,
+			UpdatedAt: profileDB.UpdatedAt,
+		}
+		return profileResponse, nil
+	}
+
+	//Get from DB
 	u.db.Where("user_id = ?", ID).First(&profileDB)
 
 	if err := u.db.Error; err != nil {
@@ -104,11 +168,24 @@ func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileRespo
 	succes, err := grpc.CreateMovement("User & Profile", change, "User Service")
 
 	if err != nil {
-		return nil, err
+		log.Println("Error in Create a movement: " + err.Error())
 	}
 
 	if succes == false {
-		log.Fatalln("Error in Create a movement")
+		log.Println("Error in Create a movement")
+	}
+
+	//Set in Redis Cache
+	redisProfile, err := json.Marshal(profileDB)
+
+	if err != nil {
+		log.Println("Error in set in the cache " + err.Error())
+	}
+
+	status := u.rdb.Set(context.Background(), "Profile:"+profileDB.UserID.String(), redisProfile, time.Hour*72)
+
+	if status.Err() != nil {
+		log.Println("Error in set in the cache " + status.Err().Error())
 	}
 
 	return profileResponse, nil
@@ -154,11 +231,11 @@ func (u *UserStorageService) ModifyUser(m *models.User, ID string, newUsername s
 	succes, err := grpc.CreateMovement("User & Profile", change, "User Service")
 
 	if err != nil {
-		return false, err
+		log.Println("Error in Create a movement: " + err.Error())
 	}
 
 	if succes == false {
-		log.Fatalln("Error in Create a movement")
+		log.Println("Error in Create a movement")
 	}
 
 	return true, nil
@@ -183,11 +260,11 @@ func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 			succes, err := grpc.CreateMovement("User", change, "User Service")
 
 			if err != nil {
-				return false, err
+				log.Println("Error in Create a movement: " + err.Error())
 			}
 
 			if succes == false {
-				log.Fatalln("Error in Create a movement")
+				log.Println("Error in Create a movement")
 			}
 
 			err = u.db.Model(&models.Relation{}).Where("from_name = ?", currentUsername).Update("from_name", newUsername).Error
@@ -205,11 +282,11 @@ func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 			succes, err = grpc.CreateMovement("Relations", "Modify UserName in relations: "+currentUsername, "User Service")
 
 			if err != nil {
-				return false, err
+				log.Println("Error in Create a movement: " + err.Error())
 			}
 
 			if succes == false {
-				log.Fatalln("Error in Create a movement")
+				log.Println("Error in Create a movement")
 			}
 
 			return true, nil
@@ -235,11 +312,11 @@ func (u *UserStorageService) ModifyEmail(ID string, newEmail string) (bool, erro
 			succes, err := grpc.CreateMovement("Profile", "Modify Email", "User Service")
 
 			if err != nil {
-				return false, err
+				log.Println("Error in Create a movement: " + err.Error())
 			}
 
 			if succes == false {
-				log.Fatalln("Error in Create a movement")
+				log.Println("Error in Create a movement")
 			}
 
 			return true, nil
@@ -429,11 +506,11 @@ func (u *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error
 	succes, err := grpc.CreateMovement("Relations", change, "User Service")
 
 	if err != nil {
-		return false, err
+		log.Println("Error in Create a movement: " + err.Error())
 	}
 
 	if succes == false {
-		log.Fatalln("Error in Create a movement")
+		log.Println("Error in Create a movement")
 	}
 
 	return true, nil
@@ -490,11 +567,11 @@ func (u *UserStorageService) CheckMutualRelation(fromUser string, toUser string)
 	succes, err := grpc.CreateMovement("Relations", "Update relation to mutual", "User Service")
 
 	if err != nil {
-		return false, err
+		log.Println("Error in Create a movement: " + err.Error())
 	}
 
 	if succes == false {
-		log.Fatalln("Error in Create a movement")
+		log.Println("Error in Create a movement")
 	}
 
 	return true, nil
@@ -524,11 +601,11 @@ func (u *UserStorageService) DeactivateRelation(FromID string, ToID string) (boo
 	succes, err := grpc.CreateMovement("Relations", "Deactive Relation: "+relationDB.RelationID.String(), "User Service")
 
 	if err != nil {
-		return false, err
+		log.Println("Error in Create a movement: " + err.Error())
 	}
 
 	if succes == false {
-		log.Fatalln("Error in Create a movement")
+		log.Println("Error in Create a movement")
 	}
 
 	return true, nil

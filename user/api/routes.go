@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/jinzhu/gorm"
@@ -8,10 +9,10 @@ import (
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/handlers"
 )
 
-func routes(DB *gorm.DB) *fiber.App {
+func routes(DB *gorm.DB, RDB *redis.Client) *fiber.App {
 	app := fiber.New()
 
-	handler := handlers.NewUserhandlerService(DB)
+	handler := handlers.NewUserhandlerService(DB, RDB)
 
 	user := app.Group("/user")
 

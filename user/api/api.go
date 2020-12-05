@@ -1,8 +1,11 @@
 package api
 
 import (
-	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/storage"
+	"github.com/go-redis/redis/v8"
 	"github.com/jinzhu/gorm"
+
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/cache"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/storage"
 )
 
 //Start Start a new User server API
@@ -12,6 +15,11 @@ func Start() {
 	DB = storage.ConnectDB()
 	defer DB.Close()
 
-	app := routes(DB)
+	var RDB *redis.Client
+
+	RDB = cache.NewRedisClient()
+	defer RDB.Close()
+
+	app := routes(DB, RDB)
 	createServer(app)
 }

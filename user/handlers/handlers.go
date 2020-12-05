@@ -3,6 +3,7 @@ package handlers
 import (
 	"strconv"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jinzhu/gorm"
 
@@ -16,10 +17,10 @@ type UserhandlerService struct {
 }
 
 //NewUserhandlerService Create new user handler
-func NewUserhandlerService(newDB *gorm.DB) *UserhandlerService {
+func NewUserhandlerService(newDB *gorm.DB, newRDB *redis.Client) *UserhandlerService {
 	//return new Handler service
 	return &UserhandlerService{
-		StorageService: storage.NewUserStorageService(newDB),
+		StorageService: storage.NewUserStorageService(newDB, newRDB),
 	}
 }
 
