@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
 	"log"
 	"time"
@@ -41,33 +39,15 @@ func (u *UserStorageService) CloseDB() {
 
 //GetUser Get basic user info
 func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
+	//Get info from Cache
+	cacheResponse, err := u.GetUserCache(ID)
 
-	val := u.rdb.Get(context.Background(), "User:"+ID)
-
-	err := val.Err()
-
-	if err != nil && err != redis.Nil {
-		log.Println("Error in geting the cache" + err.Error())
-	}
-
-	var userDB *models.User = new(models.User)
-
-	if err != redis.Nil {
-		userBytes, _ := val.Bytes()
-		json.Unmarshal(userBytes, &userDB)
-
-		//Assing the info for response
-		userResponse := &models.UserResponse{
-			UserID:   userDB.UserID,
-			UserName: userDB.UserName,
-			Balance:  userDB.Balance,
-			Avatar:   userDB.Profile.Avatar,
-		}
-
-		return userResponse, nil
+	if cacheResponse != nil && err == nil {
+		return cacheResponse, nil
 	}
 
 	//Get info from DB
+	var userDB *models.User = new(models.User)
 
 	u.db.Where("user_id = ?", &ID).First(&userDB)
 
@@ -85,29 +65,8 @@ func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 		Avatar:   userDB.Profile.Avatar,
 	}
 
-	var change string = "Get info of: " + userDB.UserName
-
-	succes, err := grpc.CreateMovement("User & Transactions", change, "User Service")
-
-	if err != nil {
-		log.Println("Error in Create a movement: " + err.Error())
-	}
-
-	if succes == false {
-		log.Println("Error in Create a movement")
-	}
-
 	//Set in Redis for Cache
-	redisUser, err := json.Marshal(userDB)
-
-	if err != nil {
-		log.Println("Error in Marshal the user" + err.Error())
-	}
-	status := u.rdb.Set(context.Background(), "User:"+userDB.UserID.String(), redisUser, time.Hour*72)
-
-	if status.Err() != nil {
-		log.Println("Error in set in the cache " + status.Err().Error())
-	}
+	u.SetUser(userDB)
 
 	return userResponse, nil
 }
@@ -115,35 +74,15 @@ func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 //GetProfileUser Get the profile info
 func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileResponse, error) {
 	//Get info from Cache
-	var profileDB *models.Profile = new(models.Profile)
+	cacheProfile, err := u.GetProfileCache(ID)
 
-	val := u.rdb.Get(context.Background(), "Profile:"+ID)
-
-	err := val.Err()
-
-	if err != nil && err != redis.Nil {
-		log.Println("Error in get the cache " + err.Error())
-	}
-
-	if err != redis.Nil {
-		userBytes, _ := val.Bytes()
-		json.Unmarshal(userBytes, &profileDB)
-
-		//Assing the info for response
-		profileResponse := &models.UserProfileResponse{
-			UserID:    profileDB.UserID,
-			FirstName: profileDB.FirstName,
-			LastName:  profileDB.LastName,
-			Email:     profileDB.Email,
-			Birthday:  profileDB.Birthday,
-			Biography: profileDB.Biography,
-			CreatedAt: profileDB.CreatedAt,
-			UpdatedAt: profileDB.UpdatedAt,
-		}
-		return profileResponse, nil
+	if cacheProfile != nil && err == nil {
+		return cacheProfile, nil
 	}
 
 	//Get from DB
+	var profileDB *models.Profile = new(models.Profile)
+
 	u.db.Where("user_id = ?", ID).First(&profileDB)
 
 	if err := u.db.Error; err != nil {
@@ -162,31 +101,8 @@ func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileRespo
 		UpdatedAt: profileDB.UpdatedAt,
 	}
 
-	var change string = "Get info Profile of: " + profileDB.UserID.String()
-
-	//Create the movement in DB
-	succes, err := grpc.CreateMovement("User & Profile", change, "User Service")
-
-	if err != nil {
-		log.Println("Error in Create a movement: " + err.Error())
-	}
-
-	if succes == false {
-		log.Println("Error in Create a movement")
-	}
-
 	//Set in Redis Cache
-	redisProfile, err := json.Marshal(profileDB)
-
-	if err != nil {
-		log.Println("Error in set in the cache " + err.Error())
-	}
-
-	status := u.rdb.Set(context.Background(), "Profile:"+profileDB.UserID.String(), redisProfile, time.Hour*72)
-
-	if status.Err() != nil {
-		log.Println("Error in set in the cache " + status.Err().Error())
-	}
+	u.SetProfile(profileDB)
 
 	return profileResponse, nil
 }
@@ -199,7 +115,7 @@ func (u *UserStorageService) ModifyUser(m *models.User, ID string, newUsername s
 	if len(m.Profile.Password) > 0 || m.Profile.Password != "" {
 		m.Profile.Password, _ = EncryptPassword(m.Profile.Password)
 
-		change += "User change password "
+		change += "User change password & "
 	}
 
 	if newUsername != "" || len(newUsername) > 0 {
@@ -217,7 +133,9 @@ func (u *UserStorageService) ModifyUser(m *models.User, ID string, newUsername s
 	}
 
 	//Modify User in DB
-	if err := u.db.Model(&models.User{}).Where("user_id = ?", ID).Update(&m).Error; err != nil {
+	go u.db.Model(&models.User{}).Where("user_id = ?", ID).Update(&m)
+
+	if err := u.db.Error; err != nil {
 		return false, err
 	}
 
@@ -226,7 +144,8 @@ func (u *UserStorageService) ModifyUser(m *models.User, ID string, newUsername s
 		return false, err
 	}
 
-	change += "& Modify user " + m.UserID.String()
+	//Make movement
+	change += "Modify user " + m.UserID.String()
 
 	succes, err := grpc.CreateMovement("User & Profile", change, "User Service")
 
@@ -238,14 +157,15 @@ func (u *UserStorageService) ModifyUser(m *models.User, ID string, newUsername s
 		log.Println("Error in Create a movement")
 	}
 
+	u.UpdateUserCache(ID)
+
 	return true, nil
 }
 
 //ModifyUsername Change the username if that not already exits
 func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, newUsername string) (bool, error) {
-	var userDB *models.User = new(models.User)
 	//Check if exits a record with that username
-	if err := u.db.Where("user_name = ?", newUsername).First(&userDB).Error; err != nil {
+	if err := u.db.Where("user_name = ?", newUsername).First(&models.User{}).Error; err != nil {
 		//If not exits update the username
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			//change username
@@ -255,6 +175,9 @@ func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 				return false, err
 			}
 
+			go u.UpdateUserCache(ID)
+
+			//Movement of change of Username
 			var change string = "Modify UserName from " + currentUsername + " to " + newUsername
 
 			succes, err := grpc.CreateMovement("User", change, "User Service")
@@ -267,17 +190,23 @@ func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 				log.Println("Error in Create a movement")
 			}
 
+			//Modify username in from relations
+
 			err = u.db.Model(&models.Relation{}).Where("from_name = ?", currentUsername).Update("from_name", newUsername).Error
 
 			if err != nil {
 				return false, err
 			}
 
+			//Modify Username in to Relations
+
 			err = u.db.Model(&models.Relation{}).Where("to_name = ?", currentUsername).Update("to_name", newUsername).Error
 
 			if err != nil {
 				return false, err
 			}
+
+			go u.UpdateRelations(ID)
 
 			succes, err = grpc.CreateMovement("Relations", "Modify UserName in relations: "+currentUsername, "User Service")
 
@@ -309,6 +238,8 @@ func (u *UserStorageService) ModifyEmail(ID string, newEmail string) (bool, erro
 				return false, err
 			}
 
+			go u.UpdateUserCache(ID)
+
 			succes, err := grpc.CreateMovement("Profile", "Modify Email", "User Service")
 
 			if err != nil {
@@ -327,71 +258,33 @@ func (u *UserStorageService) ModifyEmail(ID string, newEmail string) (bool, erro
 	return false, errors.New("Email already exists")
 }
 
-//CheckExistingUser Check existing User
-func (u *UserStorageService) CheckExistingUser(ID string) (bool, bool, error) {
-
-	var userDB *models.User = new(models.User)
-
-	var (
-		exits    bool
-		isActive bool
-	)
-
-	if err := u.db.Where("user_id = ?", ID).First(userDB).Error; err != nil {
-		exits = false
-		isActive = false
-
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return exits, isActive, errors.New("User Not exists")
-		}
-		return exits, isActive, err
-	}
-
-	exits = true
-
-	if !userDB.IsActive {
-		isActive = false
-		return exits, isActive, nil
-	}
-
-	isActive = true
-
-	return exits, isActive, nil
-}
-
-//GetIDName Get the ID from the username
-func (u *UserStorageService) GetIDName(username string, email string) (string, error) {
-	var userDB *models.User = new(models.User)
-
-	if err := u.db.Where("username = ?", username).First(&userDB).Error; err != nil {
-		return "", err
-	}
-
-	if len(userDB.UserID.String()) > 0 || userDB.UserID.String() != "" {
-		return userDB.UserID.String(), nil
-	}
-
-	var profileDB *models.Profile = new(models.Profile)
-
-	if err := u.db.Where("email = ?", email).First(&profileDB).Error; err != nil {
-		return "", err
-	}
-
-	return profileDB.UserID.String(), nil
-}
-
 //GetRelations Get relations from one User
 func (u *UserStorageService) GetRelations(ID string, page int) ([]*models.RelationReponse, error) {
+
+	if page > 1 {
+		relationsCache, err := u.GetRelationsCache(ID)
+		if err != nil {
+			log.Println("Error in get the Cache " + err.Error())
+		}
+
+		if relationsCache != nil {
+			return relationsCache, nil
+		}
+	}
+
 	//Get info from DB
 	var relationDB []*models.Relation = []*models.Relation{new(models.Relation)}
 
-	limit := page * 20
+	limit := page * 30
 
 	u.db.Where("from_user = ?", ID).Or("to_user = ? AND mutual = true", ID).Find(&relationDB).Limit(limit)
 
 	if err := u.db.Error; err != nil {
-		var relationResponse []*models.RelationReponse
-		return relationResponse, nil
+		return nil, nil
+	}
+
+	if page > 1 {
+		u.SetRelationCache(relationDB, ID)
 	}
 
 	//Assing the info for response
@@ -419,7 +312,7 @@ func (u *UserStorageService) GetRelations(ID string, page int) ([]*models.Relati
 func (u *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error) {
 
 	//Check if exits a relation but is not mutual
-	exits, err := u.CheckMutualRelation(r.FromName, r.ToName)
+	exits, err := u.CheckMutualRelation(r.FromName, r.ToName, r.FromID)
 
 	//If there was an error but the relation exits
 	if err != nil && exits {
@@ -501,70 +394,11 @@ func (u *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error
 		return false, err
 	}
 
+	go u.UpdateRelations(newRelation.FromUser.String())
+
 	var change string = "Create a new Relation between " + newRelation.FromName + " & " + newRelation.ToName
 
 	succes, err := grpc.CreateMovement("Relations", change, "User Service")
-
-	if err != nil {
-		log.Println("Error in Create a movement: " + err.Error())
-	}
-
-	if succes == false {
-		log.Println("Error in Create a movement")
-	}
-
-	return true, nil
-}
-
-//CheckExistingRelation Check if exits any relations before create
-func (u *UserStorageService) CheckExistingRelation(fromUser string, toUser string, active bool) (bool, error) {
-	//Check values
-	if len(fromUser) < 0 || len(toUser) < 0 {
-		return false, errors.New("Must send boths variables")
-	}
-
-	var relationDB *models.Relation = new(models.Relation)
-
-	err := u.db.Where(&models.Relation{FromName: fromUser, ToName: toUser}).Or(&models.Relation{FromName: toUser, ToName: fromUser, Mutual: true}).First(&relationDB).Error
-
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return false, nil
-		}
-		return false, err
-	}
-
-	//If pass the variable and the relation is not active, reactive the relation
-	if active == true && relationDB.IsActive == false {
-		err = u.db.Model(&models.Relation{}).Where(&models.Relation{RelationID: relationDB.RelationID, IsActive: false}).Update("is_active", true).Error
-		if err != nil {
-			return false, err
-		}
-
-		return true, errors.New("The relation was reactived")
-	}
-
-	return true, nil
-}
-
-//CheckMutualRelation Check if exits a relation and if is not mutual, If is not mutual update it
-func (u *UserStorageService) CheckMutualRelation(fromUser string, toUser string) (bool, error) {
-	//Check values
-	if len(fromUser) < 0 || len(toUser) < 0 {
-		return false, errors.New("Must send boths variables")
-	}
-
-	//If the relations already exits with other user updated to mutual
-	err := u.db.Model(&models.Relation{}).Where(&models.Relation{FromName: toUser, ToName: fromUser, Mutual: false}).Update("mutual", true).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return false, nil
-		}
-
-		return true, err
-	}
-
-	succes, err := grpc.CreateMovement("Relations", "Update relation to mutual", "User Service")
 
 	if err != nil {
 		log.Println("Error in Create a movement: " + err.Error())
@@ -597,6 +431,9 @@ func (u *UserStorageService) DeactivateRelation(FromID string, ToID string) (boo
 	if err := u.db.Save(&relationDB).Error; err != nil {
 		return false, err
 	}
+
+	go u.UpdateRelations(relationDB.FromUser.String())
+	go u.UpdateRelations(relationDB.ToUser.String())
 
 	succes, err := grpc.CreateMovement("Relations", "Deactive Relation: "+relationDB.RelationID.String(), "User Service")
 

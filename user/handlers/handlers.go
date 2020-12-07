@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
@@ -90,13 +91,13 @@ func (u *UserhandlerService) ModifyUser(c *fiber.Ctx) error {
 
 	//Username
 	if len(body.CurrentUserName) > 0 && len(body.NewUsername) > 0 {
-		userDB.UserName = body.CurrentUserName
-		newUserName = body.NewUsername
+		userDB.UserName = strings.ToLower(body.CurrentUserName)
+		newUserName = strings.ToLower(body.NewUsername)
 	}
 
 	//Email
 	if len(body.Email) > 0 || body.Email != "" {
-		userDB.Profile.Email = body.Email
+		userDB.Profile.Email = strings.ToLower(body.Email)
 	}
 
 	//Birthday
@@ -104,12 +105,12 @@ func (u *UserhandlerService) ModifyUser(c *fiber.Ctx) error {
 
 	//FirstName
 	if len(body.FirstName) > 0 || body.FirstName != "" {
-		userDB.Profile.FirstName = body.FirstName
+		userDB.Profile.FirstName = strings.ToLower(body.FirstName)
 	}
 
 	//LastName
 	if len(body.LastName) > 0 || body.LastName != "" {
-		userDB.Profile.LastName = body.LastName
+		userDB.Profile.LastName = strings.ToLower(body.LastName)
 	}
 
 	//Password
@@ -180,11 +181,13 @@ func (u *UserhandlerService) CreateRelation(c *fiber.Ctx) error {
 
 	//From Username
 	if len(body.FromName) < 0 || body.FromName == "" {
+		body.FromName = strings.ToLower(body.FromName)
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending from Username"})
 	}
 
 	//From Email
 	if len(body.FromEmail) < 0 || body.FromEmail == "" {
+		body.FromEmail = strings.ToLower(body.FromEmail)
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending from email"})
 	}
 	//To ID
@@ -193,10 +196,12 @@ func (u *UserhandlerService) CreateRelation(c *fiber.Ctx) error {
 	}
 	//To Username
 	if len(body.ToName) < 0 || body.ToName == "" {
+		body.ToName = strings.ToLower(body.ToName)
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending to Username"})
 	}
 	//To Email
 	if len(body.ToEmail) < 0 || body.ToEmail == "" {
+		body.ToEmail = strings.ToLower(body.ToEmail)
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending to Email"})
 	}
 
