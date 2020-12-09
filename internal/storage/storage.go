@@ -16,14 +16,13 @@ import (
 
 var (
 	host     = os.Getenv("DB_HOST")
-	port     = os.Getenv("DB_PORT")
 	user     = os.Getenv("DB_USER")
 	password = os.Getenv("DB_PASSWORD")
 	name     = os.Getenv("DB_NAME")
 )
 
 //ConnectDB connect to Postgres DB
-func ConnectDB() *gorm.DB {
+func ConnectDB(port string) *gorm.DB {
 	if host == "" {
 		log.Fatalln("Error loading ENV")
 		return nil

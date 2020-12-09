@@ -19,7 +19,7 @@ var db *gorm.DB
 
 //StartDB start the db for gRPC
 func StartDB() {
-	db = internalDB.ConnectDB()
+	db = internalDB.ConnectDB("5433")
 
 	if db == nil {
 		log.Fatalln("DB no conneted")

@@ -22,6 +22,9 @@ func NewGRPCServer() {
 
 	server.RegisterUserServiceServer(grpcServer, &s)
 
+	server.GetStorageService()
+	defer server.CloseDB()
+
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve on Port :9001 %v", err)
 	}

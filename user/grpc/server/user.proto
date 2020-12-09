@@ -8,6 +8,7 @@ service UserService {
     rpc CheckUser (UserRequest) returns (UserResponse);
     rpc CheckRelation (RelationRequest) returns (RelationResponse);
     rpc ChangeAvatar (AvatarName) returns (AvatarResponse);
+    rpc SetCacheUser (UserRequest) returns (SetCacheResponse);
 }
 
 message UserRequest {
@@ -34,4 +35,8 @@ message AvatarName {
 
 message AvatarResponse {
     bool sucess = 1;
+}
+
+message SetCacheResponse {
+    bool done = 1;
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/utils"
 	grpc "github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/grpc/client"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 )
@@ -113,7 +114,7 @@ func (u *UserStorageService) ModifyUser(m *models.User, ID string, newUsername s
 
 	//encrypt Password
 	if len(m.Profile.Password) > 0 || m.Profile.Password != "" {
-		m.Profile.Password, _ = EncryptPassword(m.Profile.Password)
+		m.Profile.Password, _ = utils.EncryptPassword(m.Profile.Password)
 
 		change += "User change password & "
 	}
@@ -131,6 +132,8 @@ func (u *UserStorageService) ModifyUser(m *models.User, ID string, newUsername s
 		}
 		m.Profile.Email = ""
 	}
+
+	m.UpdatedAt = time.Now()
 
 	//Modify User in DB
 	go u.db.Model(&models.User{}).Where("user_id = ?", ID).Update(&m)
@@ -169,7 +172,9 @@ func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 		//If not exits update the username
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			//change username
-			err = u.db.Model(&models.User{}).Where("user_id = ?", ID).Update("user_name", newUsername).Error
+			UserChange := &models.User{UserName: newUsername, UpdatedAt: time.Now()}
+
+			err = u.db.Model(&models.User{}).Where("user_id = ?", ID).Updates(&UserChange).Error
 
 			if err != nil {
 				return false, err
@@ -191,16 +196,18 @@ func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 			}
 
 			//Modify username in from relations
+			fromRelationChange := &models.Relation{FromName: newUsername, UpdatedAt: time.Now()}
 
-			err = u.db.Model(&models.Relation{}).Where("from_name = ?", currentUsername).Update("from_name", newUsername).Error
+			err = u.db.Model(&models.Relation{}).Where("from_name = ?", currentUsername).Updates(&fromRelationChange).Error
 
 			if err != nil {
 				return false, err
 			}
 
 			//Modify Username in to Relations
+			toRelationChange := &models.Relation{ToName: newUsername, UpdatedAt: time.Now()}
 
-			err = u.db.Model(&models.Relation{}).Where("to_name = ?", currentUsername).Update("to_name", newUsername).Error
+			err = u.db.Model(&models.Relation{}).Where("to_name = ?", currentUsername).Updates(&toRelationChange).Error
 
 			if err != nil {
 				return false, err
@@ -232,14 +239,19 @@ func (u *UserStorageService) ModifyEmail(ID string, newEmail string) (bool, erro
 	if err := u.db.Where("email = ?", newEmail).First(&models.Profile{}).Error; err != nil {
 		//If not exits update the username
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			err = u.db.Model(&models.Profile{}).Where("user_id = ?", ID).Update("email", newEmail).Error
+			//Update DB
+			UserChange := &models.Profile{Email: newEmail, UpdatedAt: time.Now()}
+
+			err = u.db.Model(&models.Profile{}).Where("user_id = ?", ID).Updates(&UserChange).Error
 
 			if err != nil {
 				return false, err
 			}
 
+			//Set in Cache
 			go u.UpdateUserCache(ID)
 
+			//Create Movement
 			succes, err := grpc.CreateMovement("Profile", "Modify Email", "User Service")
 
 			if err != nil {
@@ -394,8 +406,10 @@ func (u *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error
 		return false, err
 	}
 
+	//Update Cache
 	go u.UpdateRelations(newRelation.FromUser.String())
 
+	//Create Movement
 	var change string = "Create a new Relation between " + newRelation.FromName + " & " + newRelation.ToName
 
 	succes, err := grpc.CreateMovement("Relations", change, "User Service")
@@ -427,6 +441,7 @@ func (u *UserStorageService) DeactivateRelation(FromID string, ToID string) (boo
 	}
 
 	relationDB.IsActive = false
+	relationDB.UpdatedAt = time.Now()
 
 	if err := u.db.Save(&relationDB).Error; err != nil {
 		return false, err

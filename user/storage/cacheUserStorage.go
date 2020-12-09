@@ -120,7 +120,7 @@ func (u *UserStorageService) UpdateUserCache(ID string) {
 	var profileDB *models.Profile = new(models.Profile)
 
 	go u.db.Where("user_id = ?", &ID).First(&userDB)
-	go u.db.Where("user_id = ?", ID).First(&profileDB)
+	u.db.Where("user_id = ?", ID).First(&profileDB)
 
 	err := u.db.Error
 
@@ -153,6 +153,8 @@ func (u *UserStorageService) UpdateUserCache(ID string) {
 	if status.Err() != nil {
 		log.Println("Error in set in the cache " + status.Err().Error())
 	}
+
+	log.Println("User cache Updated")
 }
 
 //SetRelationCache Set One page of 20 relations

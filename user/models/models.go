@@ -13,7 +13,7 @@ import (
 type User struct {
 	UserID    uuid.UUID `gorm:"unique_index;not null;type:uuid;default:uuid_generate_v4();primaryKey"`
 	UserName  string    `gorm:"unique_index;not null"`
-	Balance   float64   `gorm:"not null"`
+	Balance   float64   `gorm:"not null;default:0"`
 	CreatedAt time.Time `gorm:"not null"`
 	UpdatedAt time.Time `gorm:"not null"`
 	IsActive  bool      `gorm:"not null;default:false"`

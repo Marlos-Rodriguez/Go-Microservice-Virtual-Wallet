@@ -12,7 +12,7 @@ import (
 func Start() {
 	var DB *gorm.DB
 
-	DB = storage.ConnectDB()
+	DB = storage.ConnectDB("5432")
 	defer DB.Close()
 
 	var RDB *redis.Client
