@@ -14,15 +14,15 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var (
-	host     = os.Getenv("DB_HOST")
-	user     = os.Getenv("DB_USER")
-	password = os.Getenv("DB_PASSWORD")
-	name     = os.Getenv("DB_NAME")
-)
-
 //ConnectDB connect to Postgres DB
-func ConnectDB(port string) *gorm.DB {
+func ConnectDB(service string) *gorm.DB {
+	var (
+		host     = os.Getenv(service + "_DB_HOST")
+		user     = os.Getenv(service + "_DB_USER")
+		port     = os.Getenv(service + "_DB_PORT")
+		password = os.Getenv(service + "_DB_PASSWORD")
+		name     = os.Getenv(service + "_DB_NAME")
+	)
 	if host == "" {
 		log.Fatalln("Error loading ENV")
 		return nil

@@ -29,6 +29,8 @@ type relationChannel struct {
 func NewUserStorageService(newDB *gorm.DB, newRDB *redis.Client) *UserStorageService {
 	newDB.AutoMigrate(&models.User{}, &models.Profile{}, &models.Relation{})
 
+	grpc.StartMoveClient()
+
 	return &UserStorageService{db: newDB, rdb: newRDB}
 }
 
@@ -36,6 +38,7 @@ func NewUserStorageService(newDB *gorm.DB, newRDB *redis.Client) *UserStorageSer
 func (u *UserStorageService) CloseDB() {
 	u.db.Close()
 	u.rdb.Close()
+	grpc.CloseMoveClient()
 }
 
 //GetUser Get basic user info

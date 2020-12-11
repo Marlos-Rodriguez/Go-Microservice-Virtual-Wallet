@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option go_package = ".;server";
+
+package server;
+
+service AuthService {
+    rpc ChangeAuthCache (UserRequest) returns (AuthResponse);
+}
+
+message UserRequest {
+    string oldUsername = 1;
+    string newUsername = 2;
+    string oldEmail = 3;
+    string newEmail = 4;
+}
+
+message AuthResponse {
+    bool success = 1;
+}
+

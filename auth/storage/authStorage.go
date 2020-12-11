@@ -2,12 +2,14 @@ package storage
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 
+	grpcClient "github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/grpc/client"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/utils"
 	UserModels "github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 )
@@ -21,7 +23,17 @@ type AuthStorageService struct {
 //NewAuthStorageService Return a new Auth Storage Service
 func NewAuthStorageService(DB *gorm.DB, RDB *redis.Client) *AuthStorageService {
 	DB.AutoMigrate(&UserModels.User{}, &UserModels.Profile{})
+
+	grpcClient.StartMoveClient()
+
 	return &AuthStorageService{db: DB, rdb: RDB}
+}
+
+//CloseDB Close Postgres DB and Redis DB
+func (s *AuthStorageService) CloseDB() {
+	s.db.Close()
+	s.rdb.Close()
+	grpcClient.CloseMoveClient()
 }
 
 func (s *AuthStorageService) register(newUser *UserModels.User) (bool, error) {
@@ -73,6 +85,13 @@ func (s *AuthStorageService) register(newUser *UserModels.User) (bool, error) {
 	s.SetRegisterCache(newUser.UserName, newUser.Profile.Email)
 
 	//Create movement
+	change := "New User with UserName " + newUser.UserName + "and Email " + newUser.Profile.Email
+
+	success, err := grpcClient.CreateMovement("User & Profile", change, "Auth Service")
+
+	if !success || err != nil {
+		log.Println("Error in cretate movement in Auth Service Storage, Register Func. Error: " + err.Error())
+	}
 
 	return true, nil
 }

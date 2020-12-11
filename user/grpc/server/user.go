@@ -21,8 +21,8 @@ var storageService *storage.UserStorageService
 
 //GetStorageService Start the storage service for GPRC server
 func GetStorageService() {
-	var DB *gorm.DB = internal.ConnectDB("5432")
-	var RDB *redis.Client = cache.NewRedisClient()
+	var DB *gorm.DB = internal.ConnectDB("USER")
+	var RDB *redis.Client = cache.NewRedisClient("USER")
 
 	storageService = storage.NewUserStorageService(DB, RDB)
 }

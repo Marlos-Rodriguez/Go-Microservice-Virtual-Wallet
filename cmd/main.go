@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	DB := storage.ConnectDB("5432")
+	DB := storage.ConnectDB("USER")
 
 	log.Println(DB.Rows())
 }

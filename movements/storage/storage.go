@@ -19,6 +19,11 @@ func NewMovementStorageService(db *gorm.DB) *MovementService {
 	return &MovementService{db: db}
 }
 
+//CloseDB Close DB for GRPC
+func (s *MovementService) CloseDB() {
+	s.db.Close()
+}
+
 //NewMovement Create a new movement
 func (s *MovementService) NewMovement(m *models.Movement) (bool, error) {
 	//Create new movement in DB

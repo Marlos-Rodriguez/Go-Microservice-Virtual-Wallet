@@ -45,3 +45,24 @@ func (s *AuthStorageService) SetRegisterCache(username string, email string) {
 
 	//Here must use User Service for set the user in cache
 }
+
+//ChangeRegisterCache Change in cache the username and email
+func (s *AuthStorageService) ChangeRegisterCache(oldUsername string, newUsername string, oldEmail string, newEmail string) (bool, error) {
+	if len(oldUsername) > 0 && len(newUsername) > 0 {
+		status := s.rdb.Rename(context.Background(), "RegisterUsername:"+oldUsername, "RegisterUsername:"+newUsername)
+		if status.Err() != nil {
+			return false, status.Err()
+		}
+		return true, nil
+	}
+
+	if len(oldEmail) > 0 && len(newEmail) > 0 {
+		status := s.rdb.Rename(context.Background(), "RegisterEmail:"+oldEmail, "RegisterEmail:"+newEmail)
+		if status.Err() != nil {
+			return false, status.Err()
+		}
+		return true, nil
+	}
+
+	return false, errors.New("Invalid Input")
+}

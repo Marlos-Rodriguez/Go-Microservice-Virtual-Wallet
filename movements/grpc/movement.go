@@ -8,27 +8,28 @@ import (
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/movements/models"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/movements/storage"
 	"github.com/google/uuid"
-	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 )
 
 //Server Movement
 type Server struct{}
 
-var db *gorm.DB
+var dbService *storage.MovementService
 
 //StartDB start the db for gRPC
 func StartDB() {
-	db = internalDB.ConnectDB("5433")
+	db := internalDB.ConnectDB("MOVE")
 
 	if db == nil {
 		log.Fatalln("DB no conneted")
 	}
+
+	dbService = storage.NewMovementStorageService(db)
 }
 
 //CloseDB close the db for gRPC
 func CloseDB() {
-	db.Close()
+	dbService.CloseDB()
 }
 
 //CreateMovement Create a New movement Server method
@@ -41,9 +42,7 @@ func (s *Server) CreateMovement(ctx context.Context, move *MovementRequest) (*Mo
 		CreatedAt:  time.Now(),
 	}
 
-	DBService := storage.NewMovementStorageService(db)
-
-	success, err := DBService.NewMovement(&newMove)
+	success, err := dbService.NewMovement(&newMove)
 
 	if err != nil {
 		return &MovementResponse{}, err
