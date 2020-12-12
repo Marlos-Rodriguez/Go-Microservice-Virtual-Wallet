@@ -31,7 +31,7 @@ func ConnectDB(service string) *gorm.DB {
 	portInt, err := strconv.Atoi(port)
 
 	if err != nil {
-		log.Fatalln("Error in connect the DB " + err.Error())
+		log.Fatalln("Error in convert port to int the DB " + err.Error())
 		return nil
 	}
 
@@ -40,17 +40,17 @@ func ConnectDB(service string) *gorm.DB {
 	DB, err = gorm.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, portInt, user, password, name))
 
 	if err != nil {
-		log.Fatalln("Error in connect the DB " + err.Error())
+		log.Fatalf("Error in connect the DB %e", err)
 		return nil
 	}
 
 	if err := DB.DB().Ping(); err != nil {
-		log.Fatalln("Error in connect the DB " + err.Error())
+		log.Fatalln("Error in make ping the DB " + err.Error())
 		return nil
 	}
 
 	if DB.Error != nil {
-		log.Fatalln("Error in connect the DB " + err.Error())
+		log.Fatalln("Any Error in connect the DB " + err.Error())
 		return nil
 	}
 

@@ -82,14 +82,3 @@ func (s *Server) ChangeAvatar(ctx context.Context, request *AvatarName) (*Avatar
 
 	return &AvatarResponse{Sucess: true}, nil
 }
-
-//SetCacheUser Set the new User in Cache for Get
-func (s *Server) SetCacheUser(ctx context.Context, request *UserRequest) (*SetCacheResponse, error) {
-	if len(request.ID) < 0 || request.ID == "" {
-		return &SetCacheResponse{Done: false}, errors.New("Must send the User ID")
-	}
-
-	storageService.UpdateUserCache(request.ID)
-
-	return &SetCacheResponse{Done: true}, nil
-}

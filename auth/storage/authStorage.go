@@ -22,9 +22,9 @@ type AuthStorageService struct {
 
 //NewAuthStorageService Return a new Auth Storage Service
 func NewAuthStorageService(DB *gorm.DB, RDB *redis.Client) *AuthStorageService {
-	DB.AutoMigrate(&UserModels.User{}, &UserModels.Profile{})
+	go grpcClient.StartClient()
 
-	grpcClient.StartMoveClient()
+	DB.AutoMigrate(&UserModels.User{}, &UserModels.Profile{})
 
 	return &AuthStorageService{db: DB, rdb: RDB}
 }
@@ -33,7 +33,7 @@ func NewAuthStorageService(DB *gorm.DB, RDB *redis.Client) *AuthStorageService {
 func (s *AuthStorageService) CloseDB() {
 	s.db.Close()
 	s.rdb.Close()
-	grpcClient.CloseMoveClient()
+	grpcClient.CloseClient()
 }
 
 func (s *AuthStorageService) register(newUser *UserModels.User) (bool, error) {
@@ -82,7 +82,7 @@ func (s *AuthStorageService) register(newUser *UserModels.User) (bool, error) {
 	}
 
 	//Create in Cache
-	s.SetRegisterCache(newUser.UserName, newUser.Profile.Email)
+	s.SetRegisterCache(newUser.UserName, newUser.Profile.Email, newUser)
 
 	//Create movement
 	change := "New User with UserName " + newUser.UserName + "and Email " + newUser.Profile.Email

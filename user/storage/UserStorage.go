@@ -27,9 +27,9 @@ type relationChannel struct {
 
 //NewUserStorageService Create a new storage user service
 func NewUserStorageService(newDB *gorm.DB, newRDB *redis.Client) *UserStorageService {
-	newDB.AutoMigrate(&models.User{}, &models.Profile{}, &models.Relation{})
+	go grpc.StartClient()
 
-	grpc.StartMoveClient()
+	newDB.AutoMigrate(&models.User{}, &models.Profile{}, &models.Relation{})
 
 	return &UserStorageService{db: newDB, rdb: newRDB}
 }
@@ -38,7 +38,7 @@ func NewUserStorageService(newDB *gorm.DB, newRDB *redis.Client) *UserStorageSer
 func (u *UserStorageService) CloseDB() {
 	u.db.Close()
 	u.rdb.Close()
-	grpc.CloseMoveClient()
+	grpc.CloseClient()
 }
 
 //GetUser Get basic user info
@@ -185,16 +185,22 @@ func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 
 			go u.UpdateUserCache(ID)
 
+			success, err := grpc.UpdateAuthCache(currentUsername, newUsername, "", "")
+
+			if err != nil || success == false {
+				log.Println("Error in Update the Auth Cache " + err.Error())
+			}
+
 			//Movement of change of Username
 			var change string = "Modify UserName from " + currentUsername + " to " + newUsername
 
-			succes, err := grpc.CreateMovement("User", change, "User Service")
+			success, err = grpc.CreateMovement("User", change, "User Service")
 
 			if err != nil {
 				log.Println("Error in Create a movement: " + err.Error())
 			}
 
-			if succes == false {
+			if success == false {
 				log.Println("Error in Create a movement")
 			}
 
@@ -218,13 +224,13 @@ func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 
 			go u.UpdateRelations(ID)
 
-			succes, err = grpc.CreateMovement("Relations", "Modify UserName in relations: "+currentUsername, "User Service")
+			success, err = grpc.CreateMovement("Relations", "Modify UserName in relations: "+currentUsername, "User Service")
 
 			if err != nil {
 				log.Println("Error in Create a movement: " + err.Error())
 			}
 
-			if succes == false {
+			if success == false {
 				log.Println("Error in Create a movement")
 			}
 
@@ -249,6 +255,25 @@ func (u *UserStorageService) ModifyEmail(ID string, newEmail string) (bool, erro
 
 			if err != nil {
 				return false, err
+			}
+
+			profile, _ := u.GetProfileCache(ID)
+
+			if profile != nil {
+				success, err := grpc.UpdateAuthCache("", "", profile.Email, newEmail)
+				if success == false || err != nil {
+					log.Println("Error in Set the Auth cache " + err.Error())
+				}
+				profile = nil
+			} else {
+				profileDB, err := u.GetProfileUser(ID)
+
+				success, err := grpc.UpdateAuthCache("", "", profileDB.Email, newEmail)
+
+				if success == false || err != nil {
+					log.Println("Error in Set the Auth cache " + err.Error())
+				}
+				profileDB = nil
 			}
 
 			//Set in Cache

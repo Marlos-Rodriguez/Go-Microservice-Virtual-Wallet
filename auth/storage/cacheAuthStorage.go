@@ -1,9 +1,12 @@
 package storage
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
+	"time"
 
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 	"github.com/go-redis/redis/v8"
 	"golang.org/x/net/context"
 )
@@ -30,7 +33,7 @@ func (s *AuthStorageService) CheckExistingUserCache(username string, email strin
 }
 
 //SetRegisterCache Set in cache the user info
-func (s *AuthStorageService) SetRegisterCache(username string, email string) {
+func (s *AuthStorageService) SetRegisterCache(username string, email string, user *models.User) {
 	if username == "" || len(username) <= 0 || email == "" || len(email) <= 0 {
 		log.Println("Review your Input")
 		return
@@ -44,6 +47,36 @@ func (s *AuthStorageService) SetRegisterCache(username string, email string) {
 	}
 
 	//Here must use User Service for set the user in cache
+	go s.SetUser(user)
+	s.SetProfile(&user.Profile)
+}
+
+//SetProfile set the profile in redis cache
+func (s *AuthStorageService) SetProfile(profileDB *models.Profile) {
+	redisUser, err := json.Marshal(profileDB)
+
+	if err != nil {
+		log.Println("Error in Marshal the user" + err.Error())
+	}
+	status := s.rdb.Set(context.Background(), "Profile:"+profileDB.UserID.String(), redisUser, time.Hour*72)
+
+	if status.Err() != nil {
+		log.Println("Error in set in the cache " + status.Err().Error())
+	}
+}
+
+//SetUser Set the User in redis Cache
+func (s *AuthStorageService) SetUser(userDB *models.User) {
+	redisUser, err := json.Marshal(userDB)
+
+	if err != nil {
+		log.Println("Error in Marshal the user" + err.Error())
+	}
+	status := s.rdb.Set(context.Background(), "User:"+userDB.UserID.String(), redisUser, time.Hour*72)
+
+	if status.Err() != nil {
+		log.Println("Error in set in the cache " + status.Err().Error())
+	}
 }
 
 //ChangeRegisterCache Change in cache the username and email
