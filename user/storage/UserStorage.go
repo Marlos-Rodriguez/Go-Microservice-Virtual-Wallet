@@ -53,7 +53,7 @@ func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 	//Get info from DB
 	var userDB *models.User = new(models.User)
 
-	u.db.Where("user_id = ?", &ID).First(&userDB)
+	u.db.Where("user_id = ?", ID).First(&userDB)
 
 	if err := u.db.Error; err != nil {
 		return nil, err

@@ -12,24 +12,24 @@ import (
 )
 
 //CheckExistingUserCache Check if the user Exits for Username or Email in Cache
-func (s *AuthStorageService) CheckExistingUserCache(username string, email string) (bool, error) {
+func (s *AuthStorageService) CheckExistingUserCache(username string, email string) (string, bool, error) {
 	if username == "" || len(username) <= 0 || email == "" || len(email) <= 0 {
-		return false, errors.New("Review your Input")
+		return "", false, errors.New("Review your Input")
 	}
 
 	val := s.rdb.Get(context.Background(), "RegisterUsername:"+username)
 
 	if val.Err() != redis.Nil {
-		return true, nil
+		return val.String(), true, nil
 	}
 
 	val = s.rdb.Get(context.Background(), "RegisterEmail:"+email)
 
 	if val.Err() != redis.Nil {
-		return true, nil
+		return val.String(), true, nil
 	}
 
-	return false, val.Err()
+	return "", false, val.Err()
 }
 
 //SetRegisterCache Set in cache the user info
@@ -39,10 +39,10 @@ func (s *AuthStorageService) SetRegisterCache(username string, email string, use
 		return
 	}
 
-	if err := s.rdb.Set(context.Background(), "RegisterUsername:"+username, "Exits", 0); err.Err() != nil {
+	if err := s.rdb.Set(context.Background(), "RegisterUsername:"+username, user.UserID.String(), 0); err.Err() != nil {
 		log.Println("Error in Auth Cache " + err.Err().Error())
 	}
-	if err := s.rdb.Set(context.Background(), "RegisterEmail:"+email, "Exits", 0); err.Err() != nil {
+	if err := s.rdb.Set(context.Background(), "RegisterEmail:"+email, user.UserID.String(), 0); err.Err() != nil {
 		log.Println("Error in Auth Cache " + err.Err().Error())
 	}
 
@@ -98,4 +98,28 @@ func (s *AuthStorageService) ChangeRegisterCache(oldUsername string, newUsername
 	}
 
 	return false, errors.New("Invalid Input")
+}
+
+//GetProfileCache Get the profile info if exits
+func (s *AuthStorageService) GetProfileCache(ID string) (*models.Profile, error) {
+	//Get info from redis
+	val := s.rdb.Get(context.Background(), "Profile:"+ID)
+
+	err := val.Err()
+
+	if err != nil && err != redis.Nil {
+		log.Println("Error in get the cache " + err.Error())
+	}
+
+	//Convert for response
+	var profileDB *models.Profile = new(models.Profile)
+
+	if err != redis.Nil {
+		userBytes, _ := val.Bytes()
+		json.Unmarshal(userBytes, &profileDB)
+
+		return profileDB, nil
+	}
+
+	return nil, err
 }

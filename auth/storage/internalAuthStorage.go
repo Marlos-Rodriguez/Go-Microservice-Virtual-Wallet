@@ -10,16 +10,16 @@ import (
 )
 
 //CheckExistingUser Check if the user Exits for Username or Email
-func (s *AuthStorageService) CheckExistingUser(username string, email string) (bool, error) {
+func (s *AuthStorageService) CheckExistingUser(username string, email string) (string, bool, error) {
 	//Check using cache
-	exits, err := s.CheckExistingUserCache(username, email)
+	ID, exits, err := s.CheckExistingUserCache(username, email)
 
 	if err != nil {
 		log.Println("Error in get the Cache " + err.Error())
 	}
 
 	if exits == true {
-		return true, nil
+		return ID, true, nil
 	}
 
 	//Check in DB
@@ -32,17 +32,17 @@ func (s *AuthStorageService) CheckExistingUser(username string, email string) (b
 			//Check Email
 			if err = s.db.Where(&UserModels.Profile{Email: email}).First(&ProfileDB).Error; err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return false, nil
+					return "", false, nil
 				}
 
-				return false, err
+				return "", false, err
 			}
 
-			return true, nil
+			return ProfileDB.UserID.String(), true, nil
 		}
 
-		return false, err
+		return "", false, err
 	}
 
-	return true, nil
+	return UserDB.UserID.String(), true, nil
 }
