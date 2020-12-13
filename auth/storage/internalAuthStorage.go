@@ -38,11 +38,17 @@ func (s *AuthStorageService) CheckExistingUser(username string, email string) (s
 				return "", false, err
 			}
 
-			return ProfileDB.UserID.String(), true, nil
+			if ProfileDB.IsActive {
+				return ProfileDB.UserID.String(), true, nil
+			}
+			return "", true, errors.New("User is not active")
 		}
 
 		return "", false, err
 	}
 
-	return UserDB.UserID.String(), true, nil
+	if UserDB.IsActive {
+		return UserDB.UserID.String(), true, nil
+	}
+	return "", true, errors.New("User is not active")
 }

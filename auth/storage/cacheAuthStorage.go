@@ -123,3 +123,50 @@ func (s *AuthStorageService) GetProfileCache(ID string) (*models.Profile, error)
 
 	return nil, err
 }
+
+//DeleteUserCache Update User & Profile in Cache
+func (s *AuthStorageService) DeleteUserCache(ID string) {
+	//Get info from DB
+	var userDB *models.User = new(models.User)
+	var profileDB *models.Profile = new(models.Profile)
+
+	go s.db.Where("user_id = ?", &ID).First(&userDB)
+	s.db.Where("user_id = ?", ID).First(&profileDB)
+
+	err := s.db.Error
+
+	if err != nil {
+		log.Fatalln("Error in get the info from DB for cache " + err.Error())
+	}
+
+	go s.rdb.Del(context.Background(), "RegisterUsername:"+userDB.UserID.String())
+	go s.rdb.Del(context.Background(), "RegisterEmail:"+userDB.UserID.String())
+
+	//Convert to save
+	redisUser, err := json.Marshal(userDB)
+
+	if err != nil {
+		log.Println("Error in Marshal the user" + err.Error())
+	}
+
+	redisProfile, err := json.Marshal(profileDB)
+
+	if err != nil {
+		log.Println("Error in Marshal the user" + err.Error())
+	}
+
+	//Save in redis
+	status := s.rdb.Set(context.Background(), "User:"+userDB.UserID.String(), redisUser, time.Hour*72)
+
+	if status.Err() != nil {
+		log.Println("Error in set in the cache " + status.Err().Error())
+	}
+
+	status = s.rdb.Set(context.Background(), "Profile:"+profileDB.UserID.String(), redisProfile, time.Hour*72)
+
+	if status.Err() != nil {
+		log.Println("Error in set in the cache " + status.Err().Error())
+	}
+
+	log.Println("User cache Updated")
+}

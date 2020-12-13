@@ -38,17 +38,17 @@ func (s *AuthStorageService) CloseDB() {
 	grpcClient.CloseClient()
 }
 
-func (s *AuthStorageService) register(newUser *UserModels.User) (bool, error) {
-	//Check if if have all requery paramts
-	if newUser.UserName == "" || len(newUser.UserName) <= 0 || newUser.Profile.Email == "" || len(newUser.Profile.Email) <= 0 {
-		return false, errors.New("Review your Input")
-	}
-
+//Register Create a new User
+func (s *AuthStorageService) Register(newUser *UserModels.User) (bool, error) {
 	//Check if username & email exits
 	_, exits, err := s.CheckExistingUser(newUser.UserName, newUser.Profile.Email)
 
 	if err != nil {
 		return false, err
+	}
+
+	if err == errors.New("User is not active") {
+		return false, errors.New("User is not active")
 	}
 
 	if exits {
@@ -115,11 +115,14 @@ func (s *AuthStorageService) Login(user *models.LoginRequest) (*models.JWTLogin,
 	profileCache, err := s.GetProfileCache(ID)
 
 	if err == nil || profileCache != nil {
+		if profileCache.IsActive == false {
+			return nil, false, errors.New("User is not active")
+		}
 		//Obtener ambas contraseñas
 		passwordBytes := []byte(user.Password)
 		passwordDB := []byte(profileCache.Password)
 
-		//comparar contraseñas
+		//Compare passwords
 		if err := bcrypt.CompareHashAndPassword(passwordDB, passwordBytes); err != nil {
 			return nil, false, err
 		}
@@ -149,7 +152,7 @@ func (s *AuthStorageService) Login(user *models.LoginRequest) (*models.JWTLogin,
 	passwordBytes := []byte(user.Password)
 	passwordDB := []byte(profileDB.Password)
 
-	//comparar contraseñas
+	//Compare passwords
 	if err := bcrypt.CompareHashAndPassword(passwordDB, passwordBytes); err != nil {
 		return nil, false, err
 	}
@@ -162,4 +165,155 @@ func (s *AuthStorageService) Login(user *models.LoginRequest) (*models.JWTLogin,
 	}
 
 	return loginResponse, true, nil
+}
+
+//ReactivateUser Reactivate the User
+func (s *AuthStorageService) ReactivateUser(ID string, password string) (bool, error) {
+	//Get info from cache
+	profileCache, err := s.GetProfileCache(ID)
+
+	if err != nil && profileCache != nil {
+		if profileCache.IsActive {
+			return false, errors.New("User is active")
+		}
+		//Obtener ambas contraseñas
+		passwordBytes := []byte(password)
+		passwordDB := []byte(profileCache.Password)
+
+		//Compare passwords
+		if err := bcrypt.CompareHashAndPassword(passwordDB, passwordBytes); err != nil {
+			return false, err
+		}
+
+		go s.db.Model(&UserModels.User{}).Where(&UserModels.User{UserID: profileCache.UserID}).Update("is_active", true)
+		s.db.Model(&UserModels.Profile{}).Where(&UserModels.Profile{UserID: profileCache.UserID}).Update("is_active", true)
+
+		if s.db.Error != nil {
+			return false, s.db.Error
+		}
+
+		//DELETE in Cache
+		s.DeleteUserCache(profileCache.UserID.String())
+
+		//Create movement
+		change := "User with ID " + ID + "Reactivate his account"
+
+		success, err := grpcClient.CreateMovement("User & Profile", change, "Auth Service")
+
+		if !success || err != nil {
+			log.Println("Error in cretate movement in Auth Service Storage, Register Func. Error: " + err.Error())
+		}
+
+		return true, nil
+	}
+
+	//Get info from DB
+	var profileDB *UserModels.Profile = new(UserModels.Profile)
+
+	if err := s.db.Where("user_id = ?", ID).First(&profileDB).Error; err != nil {
+		return false, err
+	}
+
+	//Obtener ambas contraseñas
+	passwordBytes := []byte(password)
+	passwordDB := []byte(profileDB.Password)
+
+	//Compare passwords
+	if err := bcrypt.CompareHashAndPassword(passwordDB, passwordBytes); err != nil {
+		return false, err
+	}
+
+	//Update in DB
+	go s.db.Model(&UserModels.User{}).Where(&UserModels.User{UserID: profileDB.UserID}).Update("is_active", true)
+	s.db.Model(&UserModels.Profile{}).Where(&UserModels.Profile{UserID: profileDB.UserID}).Update("is_active", true)
+
+	if s.db.Error != nil {
+		return false, s.db.Error
+	}
+
+	//Create movement
+	change := "User with ID " + ID + "Reactive his account"
+
+	success, err := grpcClient.CreateMovement("User & Profile", change, "Auth Service")
+
+	if !success || err != nil {
+		log.Println("Error in cretate movement in Auth Service Storage, Register Func. Error: " + err.Error())
+	}
+
+	return true, nil
+}
+
+//DeactivateUser Deactive the User
+func (s *AuthStorageService) DeactivateUser(ID string, password string) (bool, error) {
+	//Get info from cache
+	profileCache, err := s.GetProfileCache(ID)
+
+	if err == nil || profileCache != nil {
+		//Obtener ambas contraseñas
+		passwordBytes := []byte(password)
+		passwordDB := []byte(profileCache.Password)
+
+		//Compare passwords
+		if err := bcrypt.CompareHashAndPassword(passwordDB, passwordBytes); err != nil {
+			return false, err
+		}
+
+		go s.db.Model(&UserModels.User{}).Where(&UserModels.User{UserID: profileCache.UserID}).Update("is_active", false)
+		s.db.Model(&UserModels.Profile{}).Where(&UserModels.Profile{UserID: profileCache.UserID}).Update("is_active", false)
+
+		if s.db.Error != nil {
+			return false, s.db.Error
+		}
+
+		//DELETE in Cache
+		s.DeleteUserCache(profileCache.UserID.String())
+
+		//Create movement
+		change := "User with ID " + ID + "Deactive his account"
+
+		success, err := grpcClient.CreateMovement("User & Profile", change, "Auth Service")
+
+		if !success || err != nil {
+			log.Println("Error in cretate movement in Auth Service Storage, Register Func. Error: " + err.Error())
+		}
+
+		return true, nil
+	}
+
+	var profileDB *UserModels.Profile = new(UserModels.Profile)
+
+	if err := s.db.Where(&UserModels.User{UserID: profileCache.UserID}).First(&profileDB).Error; err != nil {
+		return false, err
+	}
+
+	//Obtener ambas contraseñas
+	passwordBytes := []byte(password)
+	passwordDB := []byte(profileDB.Password)
+
+	//Compare passwords
+	if err := bcrypt.CompareHashAndPassword(passwordDB, passwordBytes); err != nil {
+		return false, err
+	}
+
+	//Update in DB
+	go s.db.Model(&UserModels.User{}).Where(&UserModels.User{UserID: profileDB.UserID}).Update("is_active", false)
+	s.db.Model(&UserModels.Profile{}).Where(&UserModels.Profile{UserID: profileDB.UserID}).Update("is_active", false)
+
+	if s.db.Error != nil {
+		return false, s.db.Error
+	}
+
+	//DELETE in Cache
+	s.DeleteUserCache(profileDB.UserID.String())
+
+	//Create movement
+	change := "User with ID " + ID + "Deactive his account"
+
+	success, err := grpcClient.CreateMovement("User & Profile", change, "Auth Service")
+
+	if !success || err != nil {
+		log.Println("Error in cretate movement in Auth Service Storage, Register Func. Error: " + err.Error())
+	}
+
+	return true, nil
 }
