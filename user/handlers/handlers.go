@@ -3,6 +3,7 @@ package handlers
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
@@ -14,7 +15,7 @@ import (
 
 //UserhandlerService struct
 type UserhandlerService struct {
-	StorageService *storage.UserStorageService
+	StorageService storage.UserStorageService
 }
 
 //NewUserhandlerService Create new user handler
@@ -90,36 +91,38 @@ func (u *UserhandlerService) ModifyUser(c *fiber.Ctx) error {
 	var newUserName string
 
 	//Username
-	if len(body.CurrentUserName) > 0 && len(body.NewUsername) > 0 {
-		userDB.UserName = strings.ToLower(body.CurrentUserName)
-		newUserName = strings.ToLower(body.NewUsername)
+	if len(strings.TrimSpace(body.CurrentUserName)) > 0 && len(strings.TrimSpace(body.NewUsername)) > 0 {
+		userDB.UserName = strings.ToLower(strings.TrimSpace(body.CurrentUserName))
+		newUserName = strings.ToLower(strings.TrimSpace(body.NewUsername))
 	}
 
 	//Email
-	if len(body.Email) > 0 || body.Email != "" {
-		userDB.Profile.Email = strings.ToLower(body.Email)
+	if len(strings.TrimSpace(body.Email)) > 0 || body.Email != "" {
+		userDB.Profile.Email = strings.ToLower(strings.TrimSpace(body.Email))
 	}
 
 	//Birthday
-	userDB.Profile.Birthday = body.Birthday
+	if date, err := time.Parse("2006-01-02", body.Birthday); err != nil {
+		userDB.Profile.Birthday = date
+	}
 
 	//FirstName
-	if len(body.FirstName) > 0 || body.FirstName != "" {
-		userDB.Profile.FirstName = strings.ToLower(body.FirstName)
+	if len(strings.TrimSpace(body.FirstName)) > 0 || strings.TrimSpace(body.FirstName) != "" {
+		userDB.Profile.FirstName = strings.ToLower(strings.TrimSpace(body.FirstName))
 	}
 
 	//LastName
-	if len(body.LastName) > 0 || body.LastName != "" {
-		userDB.Profile.LastName = strings.ToLower(body.LastName)
+	if len(strings.TrimSpace(body.LastName)) > 0 || strings.TrimSpace(body.LastName) != "" {
+		userDB.Profile.LastName = strings.ToLower(strings.TrimSpace(body.LastName))
 	}
 
 	//Password
-	if len(body.Password) > 0 || body.Password != "" {
+	if len(body.Password) >= 6 || body.Password != "" {
 		userDB.Profile.Password = body.Password
 	}
 
 	//Biography
-	if len(body.Biography) > 0 || body.Biography != "" {
+	if len(strings.TrimSpace(body.Biography)) > 0 || strings.TrimSpace(body.Biography) != "" {
 		userDB.Profile.Biography = body.Biography
 	}
 
@@ -175,35 +178,37 @@ func (u *UserhandlerService) CreateRelation(c *fiber.Ctx) error {
 	}
 
 	//From ID
-	if len(body.FromID) < 0 || body.FromID == "" {
+	if len(strings.TrimSpace(body.FromID)) < 0 || strings.TrimSpace(body.FromID) == "" {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending from ID"})
 	}
 
+	body.FromEmail = strings.ToLower(body.FromID)
 	//From Username
-	if len(body.FromName) < 0 || body.FromName == "" {
-		body.FromName = strings.ToLower(body.FromName)
+	if len(strings.TrimSpace(body.FromName)) < 0 || strings.TrimSpace(body.FromName) == "" {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending from Username"})
 	}
 
+	body.FromName = strings.ToLower(body.FromName)
+
 	//From Email
 	if len(body.FromEmail) < 0 || body.FromEmail == "" {
-		body.FromEmail = strings.ToLower(body.FromEmail)
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending from email"})
 	}
-	//To ID
-	if len(body.ToID) < 0 || body.ToID == "" {
-		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending to ID"})
-	}
+
+	body.FromEmail = strings.ToLower(body.FromEmail)
+
 	//To Username
-	if len(body.ToName) < 0 || body.ToName == "" {
-		body.ToName = strings.ToLower(body.ToName)
+	if len(strings.TrimSpace(body.ToName)) < 0 || strings.TrimSpace(body.ToName) == "" {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending to Username"})
 	}
+
+	body.ToName = strings.ToLower(body.ToName)
 	//To Email
-	if len(body.ToEmail) < 0 || body.ToEmail == "" {
-		body.ToEmail = strings.ToLower(body.ToEmail)
+	if len(strings.TrimSpace(body.ToEmail)) < 0 || strings.TrimSpace(body.ToEmail) == "" {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending to Email"})
 	}
+
+	body.ToEmail = strings.ToLower(body.ToEmail)
 
 	if sucess, err := u.StorageService.AddRelation(body); sucess != true || err != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": "Error in create in DB", "data": err.Error()})

@@ -32,7 +32,7 @@ func CloseDB() {
 }
 
 //ChangeAuthCache Change in redis the User's Username or email
-func (s *Server) ChangeAuthCache(ctx context.Context, request *UserRequest) (*AuthResponse, error) {
+func (s *Server) ChangeAuthCache(ctx context.Context, request *NewUserInfo) (*AuthResponse, error) {
 	if len(request.OldUsername) > 0 && len(request.NewUsername) > 0 {
 		success, err := storageService.ChangeRegisterCache(request.OldUsername, request.NewUsername, "", "")
 		return &AuthResponse{Success: success}, err

@@ -12,17 +12,19 @@ import (
 )
 
 //SetUser Set the User in redis Cache
-func (u *UserStorageService) SetUser(userDB *models.User) {
+func (u *UserStorageService) SetUser(userDB *models.User) error {
 	redisUser, err := json.Marshal(userDB)
 
 	if err != nil {
-		log.Println("Error in Marshal the user" + err.Error())
+		return err
 	}
 	status := u.rdb.Set(context.Background(), "User:"+userDB.UserID.String(), redisUser, time.Hour*72)
 
 	if status.Err() != nil {
-		log.Println("Error in set in the cache " + status.Err().Error())
+		return status.Err()
 	}
+
+	return nil
 }
 
 //GetUserCache Get info from redis if exits
@@ -100,17 +102,19 @@ func (u *UserStorageService) GetProfileCache(ID string) (*models.UserProfileResp
 }
 
 //SetProfile set the profile in redis cache
-func (u *UserStorageService) SetProfile(profileDB *models.Profile) {
+func (u *UserStorageService) SetProfile(profileDB *models.Profile) error {
 	redisUser, err := json.Marshal(profileDB)
 
 	if err != nil {
-		log.Println("Error in Marshal the user" + err.Error())
+		return err
 	}
 	status := u.rdb.Set(context.Background(), "Profile:"+profileDB.UserID.String(), redisUser, time.Hour*72)
 
 	if status.Err() != nil {
-		log.Println("Error in set in the cache " + status.Err().Error())
+		return err
 	}
+
+	return err
 }
 
 //UpdateUserCache Update User & Profile in Cache

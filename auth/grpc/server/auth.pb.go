@@ -29,7 +29,7 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
-type UserRequest struct {
+type NewUserInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -40,8 +40,8 @@ type UserRequest struct {
 	NewEmail    string `protobuf:"bytes,4,opt,name=newEmail,proto3" json:"newEmail,omitempty"`
 }
 
-func (x *UserRequest) Reset() {
-	*x = UserRequest{}
+func (x *NewUserInfo) Reset() {
+	*x = NewUserInfo{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_server_auth_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -49,13 +49,13 @@ func (x *UserRequest) Reset() {
 	}
 }
 
-func (x *UserRequest) String() string {
+func (x *NewUserInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UserRequest) ProtoMessage() {}
+func (*NewUserInfo) ProtoMessage() {}
 
-func (x *UserRequest) ProtoReflect() protoreflect.Message {
+func (x *NewUserInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_server_auth_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -67,33 +67,33 @@ func (x *UserRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UserRequest.ProtoReflect.Descriptor instead.
-func (*UserRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use NewUserInfo.ProtoReflect.Descriptor instead.
+func (*NewUserInfo) Descriptor() ([]byte, []int) {
 	return file_server_auth_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *UserRequest) GetOldUsername() string {
+func (x *NewUserInfo) GetOldUsername() string {
 	if x != nil {
 		return x.OldUsername
 	}
 	return ""
 }
 
-func (x *UserRequest) GetNewUsername() string {
+func (x *NewUserInfo) GetNewUsername() string {
 	if x != nil {
 		return x.NewUsername
 	}
 	return ""
 }
 
-func (x *UserRequest) GetOldEmail() string {
+func (x *NewUserInfo) GetOldEmail() string {
 	if x != nil {
 		return x.OldEmail
 	}
 	return ""
 }
 
-func (x *UserRequest) GetNewEmail() string {
+func (x *NewUserInfo) GetNewEmail() string {
 	if x != nil {
 		return x.NewEmail
 	}
@@ -152,7 +152,7 @@ var File_server_auth_proto protoreflect.FileDescriptor
 var file_server_auth_proto_rawDesc = []byte{
 	0x0a, 0x11, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2f, 0x61, 0x75, 0x74, 0x68, 0x2e, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x12, 0x06, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x22, 0x89, 0x01, 0x0a, 0x0b,
-	0x55, 0x73, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x20, 0x0a, 0x0b, 0x6f,
+	0x4e, 0x65, 0x77, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x20, 0x0a, 0x0b, 0x6f,
 	0x6c, 0x64, 0x55, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
 	0x52, 0x0b, 0x6f, 0x6c, 0x64, 0x55, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x20, 0x0a,
 	0x0b, 0x6e, 0x65, 0x77, 0x55, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01,
@@ -165,8 +165,8 @@ var file_server_auth_proto_rawDesc = []byte{
 	0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73,
 	0x73, 0x32, 0x4b, 0x0a, 0x0b, 0x41, 0x75, 0x74, 0x68, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
 	0x12, 0x3c, 0x0a, 0x0f, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x41, 0x75, 0x74, 0x68, 0x43, 0x61,
-	0x63, 0x68, 0x65, 0x12, 0x13, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x55, 0x73, 0x65,
-	0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65,
+	0x63, 0x68, 0x65, 0x12, 0x13, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x4e, 0x65, 0x77,
+	0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x1a, 0x14, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65,
 	0x72, 0x2e, 0x41, 0x75, 0x74, 0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x0a,
 	0x5a, 0x08, 0x2e, 0x3b, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x33,
@@ -186,11 +186,11 @@ func file_server_auth_proto_rawDescGZIP() []byte {
 
 var file_server_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_server_auth_proto_goTypes = []interface{}{
-	(*UserRequest)(nil),  // 0: server.UserRequest
+	(*NewUserInfo)(nil),  // 0: server.NewUserInfo
 	(*AuthResponse)(nil), // 1: server.AuthResponse
 }
 var file_server_auth_proto_depIdxs = []int32{
-	0, // 0: server.AuthService.ChangeAuthCache:input_type -> server.UserRequest
+	0, // 0: server.AuthService.ChangeAuthCache:input_type -> server.NewUserInfo
 	1, // 1: server.AuthService.ChangeAuthCache:output_type -> server.AuthResponse
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
@@ -206,7 +206,7 @@ func file_server_auth_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_server_auth_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*UserRequest); i {
+			switch v := v.(*NewUserInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -262,7 +262,7 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type AuthServiceClient interface {
-	ChangeAuthCache(ctx context.Context, in *UserRequest, opts ...grpc.CallOption) (*AuthResponse, error)
+	ChangeAuthCache(ctx context.Context, in *NewUserInfo, opts ...grpc.CallOption) (*AuthResponse, error)
 }
 
 type authServiceClient struct {
@@ -273,7 +273,7 @@ func NewAuthServiceClient(cc grpc.ClientConnInterface) AuthServiceClient {
 	return &authServiceClient{cc}
 }
 
-func (c *authServiceClient) ChangeAuthCache(ctx context.Context, in *UserRequest, opts ...grpc.CallOption) (*AuthResponse, error) {
+func (c *authServiceClient) ChangeAuthCache(ctx context.Context, in *NewUserInfo, opts ...grpc.CallOption) (*AuthResponse, error) {
 	out := new(AuthResponse)
 	err := c.cc.Invoke(ctx, "/server.AuthService/ChangeAuthCache", in, out, opts...)
 	if err != nil {
@@ -284,14 +284,14 @@ func (c *authServiceClient) ChangeAuthCache(ctx context.Context, in *UserRequest
 
 // AuthServiceServer is the server API for AuthService service.
 type AuthServiceServer interface {
-	ChangeAuthCache(context.Context, *UserRequest) (*AuthResponse, error)
+	ChangeAuthCache(context.Context, *NewUserInfo) (*AuthResponse, error)
 }
 
 // UnimplementedAuthServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedAuthServiceServer struct {
 }
 
-func (*UnimplementedAuthServiceServer) ChangeAuthCache(context.Context, *UserRequest) (*AuthResponse, error) {
+func (*UnimplementedAuthServiceServer) ChangeAuthCache(context.Context, *NewUserInfo) (*AuthResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ChangeAuthCache not implemented")
 }
 
@@ -300,7 +300,7 @@ func RegisterAuthServiceServer(s *grpc.Server, srv AuthServiceServer) {
 }
 
 func _AuthService_ChangeAuthCache_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UserRequest)
+	in := new(NewUserInfo)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -312,7 +312,7 @@ func _AuthService_ChangeAuthCache_Handler(srv interface{}, ctx context.Context, 
 		FullMethod: "/server.AuthService/ChangeAuthCache",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).ChangeAuthCache(ctx, req.(*UserRequest))
+		return srv.(AuthServiceServer).ChangeAuthCache(ctx, req.(*NewUserInfo))
 	}
 	return interceptor(ctx, in, info, handler)
 }

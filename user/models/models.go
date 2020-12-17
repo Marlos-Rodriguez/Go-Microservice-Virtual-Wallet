@@ -52,14 +52,14 @@ type Relation struct {
 
 //UserRequest struct
 type UserRequest struct {
-	CurrentUserName string    `json:"current_user_name"`
-	NewUsername     string    `json:"new_user_name"`
-	FirstName       string    `json:"first_name"`
-	LastName        string    `json:"last_name"`
-	Email           string    `json:"email"`
-	Password        string    `json:"password"`
-	Birthday        time.Time `json:"birthday"`
-	Biography       string    `json:"biography"`
+	CurrentUserName string `json:"current_user_name"`
+	NewUsername     string `json:"new_user_name"`
+	FirstName       string `json:"first_name"`
+	LastName        string `json:"last_name"`
+	Email           string `json:"email"`
+	Password        string `json:"password"`
+	Birthday        string `json:"birthday"`
+	Biography       string `json:"biography"`
 }
 
 //RelationRequest struct
@@ -67,7 +67,6 @@ type RelationRequest struct {
 	FromID    string `json:"from_ID"`
 	FromName  string `json:"from_name"`
 	FromEmail string `json:"from_email"`
-	ToID      string `json:"to_ID"`
 	ToName    string `json:"to_name"`
 	ToEmail   string `json:"to_email"`
 }

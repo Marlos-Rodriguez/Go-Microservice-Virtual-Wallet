@@ -28,7 +28,12 @@ func closeAuthClient() {
 
 //UpdateAuthCache Update the User username or email
 func UpdateAuthCache(oldUsername string, newUsername string, oldEmail string, newEmail string) (bool, error) {
-	User := &auth.UserRequest{}
+	User := &auth.NewUserInfo{
+		OldUsername: oldUsername,
+		NewUsername: newUsername,
+		OldEmail:    oldEmail,
+		NewEmail:    newEmail,
+	}
 
 	response, err := authClient.ChangeAuthCache(context.Background(), User)
 

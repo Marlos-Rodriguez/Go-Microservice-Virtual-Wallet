@@ -5,10 +5,10 @@ option go_package = ".;server";
 package server;
 
 service AuthService {
-    rpc ChangeAuthCache (UserRequest) returns (AuthResponse);
+    rpc ChangeAuthCache (NewUserInfo) returns (AuthResponse);
 }
 
-message UserRequest {
+message NewUserInfo {
     string oldUsername = 1;
     string newUsername = 2;
     string oldEmail = 3;

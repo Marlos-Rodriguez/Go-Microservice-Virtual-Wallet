@@ -20,18 +20,15 @@ type UserStorageService struct {
 	rdb *redis.Client
 }
 
-type relationChannel struct {
-	Err error
-	ID  string
-}
-
 //NewUserStorageService Create a new storage user service
-func NewUserStorageService(newDB *gorm.DB, newRDB *redis.Client) *UserStorageService {
+func NewUserStorageService(newDB *gorm.DB, newRDB *redis.Client) UserStorageService {
 	go grpc.StartClient()
 
 	newDB.AutoMigrate(&models.User{}, &models.Profile{}, &models.Relation{})
 
-	return &UserStorageService{db: newDB, rdb: newRDB}
+	newService := UserStorageService{db: newDB, rdb: newRDB}
+
+	return newService
 }
 
 //CloseDB Close DB for GRPC
@@ -70,7 +67,9 @@ func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 	}
 
 	//Set in Redis for Cache
-	u.SetUser(userDB)
+	if err := u.SetUser(userDB); err != nil {
+		return userResponse, err
+	}
 
 	return userResponse, nil
 }
@@ -106,7 +105,9 @@ func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileRespo
 	}
 
 	//Set in Redis Cache
-	u.SetProfile(profileDB)
+	if err := u.SetProfile(profileDB); err != nil {
+		return profileResponse, err
+	}
 
 	return profileResponse, nil
 }

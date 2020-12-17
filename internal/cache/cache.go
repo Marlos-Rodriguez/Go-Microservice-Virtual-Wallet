@@ -6,8 +6,9 @@ import (
 	"os"
 
 	//Autoload the env
-	"github.com/go-redis/redis/v8"
 	_ "github.com/joho/godotenv/autoload"
+
+	"github.com/go-redis/redis/v8"
 )
 
 //NewRedisClient return a new redis client

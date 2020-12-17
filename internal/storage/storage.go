@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/jinzhu/gorm"
+
 	//Autoload the env
 	_ "github.com/joho/godotenv/autoload"
 
@@ -16,6 +17,7 @@ import (
 
 //ConnectDB connect to Postgres DB
 func ConnectDB(service string) *gorm.DB {
+	//Variables for DB
 	var (
 		host     = os.Getenv(service + "_DB_HOST")
 		user     = os.Getenv(service + "_DB_USER")
@@ -35,10 +37,12 @@ func ConnectDB(service string) *gorm.DB {
 		return nil
 	}
 
+	//Connect to DB
 	var DB *gorm.DB
 
 	DB, err = gorm.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, portInt, user, password, name))
 
+	//Check for Errors in DB
 	if err != nil {
 		log.Fatalf("Error in connect the DB %e", err)
 		return nil

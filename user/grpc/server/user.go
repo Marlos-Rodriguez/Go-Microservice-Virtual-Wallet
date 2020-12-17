@@ -17,7 +17,7 @@ import (
 type Server struct {
 }
 
-var storageService *storage.UserStorageService
+var storageService storage.UserStorageService
 
 //GetStorageService Start the storage service for GPRC server
 func GetStorageService() {
