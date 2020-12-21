@@ -64,11 +64,13 @@ type UserRequest struct {
 
 //RelationRequest struct
 type RelationRequest struct {
-	FromID    string `json:"from_ID"`
-	FromName  string `json:"from_name"`
-	FromEmail string `json:"from_email"`
-	ToName    string `json:"to_name"`
-	ToEmail   string `json:"to_email"`
+	RelationID string `json:"relation_id"`
+	FromID     string `json:"from_ID"`
+	FromName   string `json:"from_name"`
+	FromEmail  string `json:"from_email"`
+	ToID       string `to:"from_ID"`
+	ToName     string `json:"to_name"`
+	ToEmail    string `json:"to_email"`
 }
 
 //UserResponse struct

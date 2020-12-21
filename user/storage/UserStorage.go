@@ -32,16 +32,16 @@ func NewUserStorageService(newDB *gorm.DB, newRDB *redis.Client) UserStorageServ
 }
 
 //CloseDB Close DB for GRPC
-func (u *UserStorageService) CloseDB() {
-	u.db.Close()
-	u.rdb.Close()
+func (s *UserStorageService) CloseDB() {
+	s.db.Close()
+	s.rdb.Close()
 	grpc.CloseClient()
 }
 
 //GetUser Get basic user info
-func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
+func (s *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 	//Get info from Cache
-	cacheResponse, err := u.GetUserCache(ID)
+	cacheResponse, err := s.GetUserCache(ID)
 
 	if cacheResponse != nil && err == nil {
 		return cacheResponse, nil
@@ -50,9 +50,9 @@ func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 	//Get info from DB
 	var userDB *models.User = new(models.User)
 
-	u.db.Where("user_id = ?", ID).First(&userDB)
+	s.db.Where("user_id = ?", ID).First(&userDB)
 
-	if err := u.db.Error; err != nil {
+	if err := s.db.Error; err != nil {
 		return nil, err
 	}
 
@@ -67,7 +67,7 @@ func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 	}
 
 	//Set in Redis for Cache
-	if err := u.SetUser(userDB); err != nil {
+	if err := s.SetUser(userDB); err != nil {
 		return userResponse, err
 	}
 
@@ -75,9 +75,9 @@ func (u *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 }
 
 //GetProfileUser Get the profile info
-func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileResponse, error) {
+func (s *UserStorageService) GetProfileUser(ID string) (*models.UserProfileResponse, error) {
 	//Get info from Cache
-	cacheProfile, err := u.GetProfileCache(ID)
+	cacheProfile, err := s.GetProfileCache(ID)
 
 	if cacheProfile != nil && err == nil {
 		return cacheProfile, nil
@@ -86,9 +86,9 @@ func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileRespo
 	//Get from DB
 	var profileDB *models.Profile = new(models.Profile)
 
-	u.db.Where("user_id = ?", ID).First(&profileDB)
+	s.db.Where("user_id = ?", ID).First(&profileDB)
 
-	if err := u.db.Error; err != nil {
+	if err := s.db.Error; err != nil {
 		return nil, err
 	}
 
@@ -105,7 +105,7 @@ func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileRespo
 	}
 
 	//Set in Redis Cache
-	if err := u.SetProfile(profileDB); err != nil {
+	if err := s.SetProfile(profileDB); err != nil {
 		return profileResponse, err
 	}
 
@@ -113,7 +113,7 @@ func (u *UserStorageService) GetProfileUser(ID string) (*models.UserProfileRespo
 }
 
 //ModifyUser This modify the Complete User, this must not modify the Username or Email
-func (u *UserStorageService) ModifyUser(m *models.User, ID string, newUsername string) (bool, error) {
+func (s *UserStorageService) ModifyUser(m *models.User, ID string, newUsername string) (bool, error) {
 	var change string
 
 	//encrypt Password
@@ -124,14 +124,14 @@ func (u *UserStorageService) ModifyUser(m *models.User, ID string, newUsername s
 	}
 
 	if newUsername != "" || len(newUsername) > 0 {
-		if sucess, err := u.ModifyUsername(ID, m.UserName, newUsername); err != nil || sucess == false {
+		if sucess, err := s.ModifyUsername(ID, m.UserName, newUsername); err != nil || sucess == false {
 			return false, err
 		}
 		m.UserName = ""
 	}
 
 	if m.Profile.Email != "" || len(m.Profile.Email) > 0 {
-		if sucess, err := u.ModifyEmail(ID, m.Profile.Email); err != nil || sucess == false {
+		if sucess, err := s.ModifyEmail(ID, m.Profile.Email); err != nil || sucess == false {
 			return false, err
 		}
 		m.Profile.Email = ""
@@ -140,14 +140,14 @@ func (u *UserStorageService) ModifyUser(m *models.User, ID string, newUsername s
 	m.UpdatedAt = time.Now()
 
 	//Modify User in DB
-	go u.db.Model(&models.User{}).Where("user_id = ?", ID).Update(&m)
+	go s.db.Model(&models.User{}).Where("user_id = ?", ID).Update(&m)
 
-	if err := u.db.Error; err != nil {
+	if err := s.db.Error; err != nil {
 		return false, err
 	}
 
 	//Modify in Profile DB
-	if err := u.db.Model(&models.Profile{}).Where("user_id = ?", ID).Update(&m.Profile).Error; err != nil {
+	if err := s.db.Model(&models.Profile{}).Where("user_id = ?", ID).Update(&m.Profile).Error; err != nil {
 		return false, err
 	}
 
@@ -164,27 +164,27 @@ func (u *UserStorageService) ModifyUser(m *models.User, ID string, newUsername s
 		log.Println("Error in Create a movement")
 	}
 
-	u.UpdateUserCache(ID)
+	s.UpdateUserCache(ID)
 
 	return true, nil
 }
 
 //ModifyUsername Change the username if that not already exits
-func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, newUsername string) (bool, error) {
+func (s *UserStorageService) ModifyUsername(ID string, currentUsername string, newUsername string) (bool, error) {
 	//Check if exits a record with that username
-	if err := u.db.Where("user_name = ?", newUsername).First(&models.User{}).Error; err != nil {
+	if err := s.db.Where("user_name = ?", newUsername).First(&models.User{}).Error; err != nil {
 		//If not exits update the username
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			//change username
 			UserChange := &models.User{UserName: newUsername, UpdatedAt: time.Now()}
 
-			err = u.db.Model(&models.User{}).Where("user_id = ?", ID).Updates(&UserChange).Error
+			err = s.db.Model(&models.User{}).Where("user_id = ?", ID).Updates(&UserChange).Error
 
 			if err != nil {
 				return false, err
 			}
 
-			go u.UpdateUserCache(ID)
+			go s.UpdateUserCache(ID)
 
 			success, err := grpc.UpdateAuthCache(currentUsername, newUsername, "", "")
 
@@ -208,7 +208,7 @@ func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 			//Modify username in from relations
 			fromRelationChange := &models.Relation{FromName: newUsername, UpdatedAt: time.Now()}
 
-			err = u.db.Model(&models.Relation{}).Where("from_name = ?", currentUsername).Updates(&fromRelationChange).Error
+			err = s.db.Model(&models.Relation{}).Where("from_name = ?", currentUsername).Updates(&fromRelationChange).Error
 
 			if err != nil {
 				return false, err
@@ -217,13 +217,13 @@ func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 			//Modify Username in to Relations
 			toRelationChange := &models.Relation{ToName: newUsername, UpdatedAt: time.Now()}
 
-			err = u.db.Model(&models.Relation{}).Where("to_name = ?", currentUsername).Updates(&toRelationChange).Error
+			err = s.db.Model(&models.Relation{}).Where("to_name = ?", currentUsername).Updates(&toRelationChange).Error
 
 			if err != nil {
 				return false, err
 			}
 
-			go u.UpdateRelations(ID)
+			go s.UpdateRelations(ID)
 
 			success, err = grpc.CreateMovement("Relations", "Modify UserName in relations: "+currentUsername, "User Service")
 
@@ -244,21 +244,21 @@ func (u *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 }
 
 //ModifyEmail Change the username if that not already exits
-func (u *UserStorageService) ModifyEmail(ID string, newEmail string) (bool, error) {
+func (s *UserStorageService) ModifyEmail(ID string, newEmail string) (bool, error) {
 	//Check if exits a record with that email
-	if err := u.db.Where("email = ?", newEmail).First(&models.Profile{}).Error; err != nil {
+	if err := s.db.Where("email = ?", newEmail).First(&models.Profile{}).Error; err != nil {
 		//If not exits update the username
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			//Update DB
 			UserChange := &models.Profile{Email: newEmail, UpdatedAt: time.Now()}
 
-			err = u.db.Model(&models.Profile{}).Where("user_id = ?", ID).Updates(&UserChange).Error
+			err = s.db.Model(&models.Profile{}).Where("user_id = ?", ID).Updates(&UserChange).Error
 
 			if err != nil {
 				return false, err
 			}
 
-			profile, _ := u.GetProfileCache(ID)
+			profile, _ := s.GetProfileCache(ID)
 
 			if profile != nil {
 				success, err := grpc.UpdateAuthCache("", "", profile.Email, newEmail)
@@ -267,7 +267,7 @@ func (u *UserStorageService) ModifyEmail(ID string, newEmail string) (bool, erro
 				}
 				profile = nil
 			} else {
-				profileDB, err := u.GetProfileUser(ID)
+				profileDB, err := s.GetProfileUser(ID)
 
 				success, err := grpc.UpdateAuthCache("", "", profileDB.Email, newEmail)
 
@@ -278,7 +278,7 @@ func (u *UserStorageService) ModifyEmail(ID string, newEmail string) (bool, erro
 			}
 
 			//Set in Cache
-			go u.UpdateUserCache(ID)
+			go s.UpdateUserCache(ID)
 
 			//Create Movement
 			succes, err := grpc.CreateMovement("Profile", "Modify Email", "User Service")
@@ -300,10 +300,10 @@ func (u *UserStorageService) ModifyEmail(ID string, newEmail string) (bool, erro
 }
 
 //GetRelations Get relations from one User
-func (u *UserStorageService) GetRelations(ID string, page int) ([]*models.RelationReponse, error) {
+func (s *UserStorageService) GetRelations(ID string, page int) ([]*models.RelationReponse, error) {
 
 	if page > 1 {
-		relationsCache, err := u.GetRelationsCache(ID)
+		relationsCache, err := s.GetRelationsCache(ID)
 		if err != nil {
 			log.Println("Error in get the Cache " + err.Error())
 		}
@@ -318,14 +318,14 @@ func (u *UserStorageService) GetRelations(ID string, page int) ([]*models.Relati
 
 	limit := page * 30
 
-	u.db.Where("from_user = ?", ID).Or("to_user = ? AND mutual = true", ID).Find(&relationDB).Limit(limit)
+	s.db.Where("from_user = ?", ID).Or("to_user = ? AND mutual = true", ID).Find(&relationDB).Limit(limit)
 
-	if err := u.db.Error; err != nil {
+	if err := s.db.Error; err != nil {
 		return nil, nil
 	}
 
 	if page > 1 {
-		u.SetRelationCache(relationDB, ID)
+		s.SetRelationCache(relationDB, ID)
 	}
 
 	//Assing the info for response
@@ -350,10 +350,10 @@ func (u *UserStorageService) GetRelations(ID string, page int) ([]*models.Relati
 }
 
 //AddRelation Create a new Relation
-func (u *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error) {
+func (s *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error) {
 
 	//Check if exits a relation but is not mutual
-	exits, err := u.CheckMutualRelation(r.FromName, r.ToName, r.FromID)
+	exits, err := s.CheckMutualRelation(r.FromName, r.ToName, r.FromID)
 
 	//If there was an error but the relation exits
 	if err != nil && exits {
@@ -366,7 +366,7 @@ func (u *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error
 	}
 
 	//Check if exits the relation in DB
-	exits, err = u.CheckExistingRelation(r.FromName, r.ToName, true)
+	exits, err = s.CheckExistingRelation(r.FromName, r.ToName, true)
 
 	//If there was an error
 	if err != nil {
@@ -384,7 +384,7 @@ func (u *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error
 	//Get the other user ID
 	var toID string
 
-	toID, err = u.GetIDName(r.ToName, r.ToEmail)
+	toID, err = s.GetIDName(r.ToName, r.ToEmail)
 
 	//If there was an error
 	if err != nil {
@@ -398,7 +398,7 @@ func (u *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error
 	//Check if exits another the new user
 	var isActive bool
 
-	exits, isActive, err = u.CheckExistingUser(toID)
+	exits, isActive, err = s.CheckExistingUser(toID)
 
 	if err != nil {
 		return false, err
@@ -431,12 +431,12 @@ func (u *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error
 	}
 
 	//Create relation in DB
-	if err := u.db.Create(&newRelation).Error; err != nil {
+	if err := s.db.Create(&newRelation).Error; err != nil {
 		return false, err
 	}
 
 	//Update Cache
-	go u.UpdateRelations(newRelation.FromUser.String())
+	go s.UpdateRelations(newRelation.FromUser.String())
 
 	//Create Movement
 	var change string = "Create a new Relation between " + newRelation.FromName + " & " + newRelation.ToName
@@ -455,7 +455,7 @@ func (u *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error
 }
 
 //DeactivateRelation Deactive the relation in DB
-func (u *UserStorageService) DeactivateRelation(FromID string, ToID string) (bool, error) {
+func (s *UserStorageService) DeactivateRelation(relationID string, FromID string, ToID string) (bool, error) {
 	//Check values
 	if len(FromID) < 0 || len(ToID) < 0 {
 		return false, errors.New("Must send boths variables")
@@ -463,21 +463,22 @@ func (u *UserStorageService) DeactivateRelation(FromID string, ToID string) (boo
 
 	var relationDB *models.Relation = new(models.Relation)
 
-	u.db.Where("from_user = ? AND to_user = ?", FromID, ToID).Or("from_user = ? AND to_user = ? AND mutual = true", ToID, FromID).First(&relationDB)
+	s.db.Where("relation_id = ? AND from_user = ? AND to_user = ?", relationID, FromID, ToID).
+		Or("relation_id = ? AND from_user = ? AND to_user = ? AND mutual = true", relationID, ToID, FromID).First(&relationDB)
 
-	if u.db.Error != nil {
-		return false, u.db.Error
+	if s.db.Error != nil {
+		return false, s.db.Error
 	}
 
 	relationDB.IsActive = false
 	relationDB.UpdatedAt = time.Now()
 
-	if err := u.db.Save(&relationDB).Error; err != nil {
+	if err := s.db.Save(&relationDB).Error; err != nil {
 		return false, err
 	}
 
-	go u.UpdateRelations(relationDB.FromUser.String())
-	go u.UpdateRelations(relationDB.ToUser.String())
+	go s.UpdateRelations(relationDB.FromUser.String())
+	go s.UpdateRelations(relationDB.ToUser.String())
 
 	succes, err := grpc.CreateMovement("Relations", "Deactive Relation: "+relationDB.RelationID.String(), "User Service")
 

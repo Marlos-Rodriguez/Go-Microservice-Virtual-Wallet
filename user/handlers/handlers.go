@@ -5,12 +5,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jinzhu/gorm"
 
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/storage"
+
+	internalJWT "github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/jwt"
 )
 
 //UserhandlerService struct
@@ -27,7 +30,7 @@ func NewUserhandlerService(newDB *gorm.DB, newRDB *redis.Client) *UserhandlerSer
 }
 
 //GetUser Get the basic user Info for main page
-func (u *UserhandlerService) GetUser(c *fiber.Ctx) error {
+func (s *UserhandlerService) GetUser(c *fiber.Ctx) error {
 	//Get the ID
 	ID := c.Params("id")
 
@@ -35,10 +38,18 @@ func (u *UserhandlerService) GetUser(c *fiber.Ctx) error {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Review your input"})
 	}
 
-	//Here must be check if the ID of the token mach
+	//Check the JWT ID
+	tk := c.Locals("user").(*jwt.Token)
+	if err := internalJWT.GetClaims(*tk); err != nil {
+		return c.Status(fiber.ErrBadGateway.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
+
+	if match, err := internalJWT.CheckID(ID); !match || err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
 
 	//Get the info from DB
-	UserInfo, err := u.StorageService.GetUser(ID)
+	UserInfo, err := s.StorageService.GetUser(ID)
 
 	if err != nil {
 		return c.Status(fiber.ErrBadGateway.Code).JSON(fiber.Map{"status": "error", "message": "Error in DB", "data": err.Error()})
@@ -49,7 +60,7 @@ func (u *UserhandlerService) GetUser(c *fiber.Ctx) error {
 }
 
 //GetProfileUser Get the profile info for user info page
-func (u *UserhandlerService) GetProfileUser(c *fiber.Ctx) error {
+func (s *UserhandlerService) GetProfileUser(c *fiber.Ctx) error {
 	//Get the ID
 	ID := c.Params("id")
 
@@ -57,10 +68,18 @@ func (u *UserhandlerService) GetProfileUser(c *fiber.Ctx) error {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Review your input"})
 	}
 
-	//Here must be check if the ID of the token mach
+	//Check the JWT ID
+	tk := c.Locals("user").(*jwt.Token)
+	if err := internalJWT.GetClaims(*tk); err != nil {
+		return c.Status(fiber.ErrBadGateway.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
+
+	if match, err := internalJWT.CheckID(ID); !match || err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
 
 	//Get the info from DB
-	ProfileInfo, err := u.StorageService.GetProfileUser(ID)
+	ProfileInfo, err := s.StorageService.GetProfileUser(ID)
 
 	if err != nil {
 		return c.Status(fiber.ErrBadGateway.Code).JSON(fiber.Map{"status": "error", "message": "Error in DB", "data": err.Error()})
@@ -71,7 +90,7 @@ func (u *UserhandlerService) GetProfileUser(c *fiber.Ctx) error {
 }
 
 //ModifyUser modify the User Info
-func (u *UserhandlerService) ModifyUser(c *fiber.Ctx) error {
+func (s *UserhandlerService) ModifyUser(c *fiber.Ctx) error {
 	//Get the ID
 	ID := c.Params("id")
 
@@ -85,7 +104,15 @@ func (u *UserhandlerService) ModifyUser(c *fiber.Ctx) error {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Review your body", "data": err.Error()})
 	}
 
-	//Here must check the id if mach with token
+	//Check the JWT ID
+	tk := c.Locals("user").(*jwt.Token)
+	if err := internalJWT.GetClaims(*tk); err != nil {
+		return c.Status(fiber.ErrBadGateway.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
+
+	if match, err := internalJWT.CheckID(ID); !match || err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
 
 	var userDB models.User
 	var newUserName string
@@ -126,7 +153,7 @@ func (u *UserhandlerService) ModifyUser(c *fiber.Ctx) error {
 		userDB.Profile.Biography = body.Biography
 	}
 
-	if sucess, err := u.StorageService.ModifyUser(&userDB, ID, newUserName); err != nil || sucess != true {
+	if sucess, err := s.StorageService.ModifyUser(&userDB, ID, newUserName); err != nil || sucess != true {
 		return c.Status(fiber.ErrConflict.Code).JSON(fiber.Map{"status": "error", "message": "Error in DB", "data": err.Error()})
 	}
 
@@ -134,7 +161,7 @@ func (u *UserhandlerService) ModifyUser(c *fiber.Ctx) error {
 }
 
 //GetRelations Get relations from DB
-func (u *UserhandlerService) GetRelations(c *fiber.Ctx) error {
+func (s *UserhandlerService) GetRelations(c *fiber.Ctx) error {
 	//Get the ID
 	ID := c.Params("id")
 
@@ -156,10 +183,18 @@ func (u *UserhandlerService) GetRelations(c *fiber.Ctx) error {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error converting in Integer", "data": err.Error()})
 	}
 
-	//Here must check if the id mach with the token
+	//Check the JWT ID
+	tk := c.Locals("user").(*jwt.Token)
+	if err := internalJWT.GetClaims(*tk); err != nil {
+		return c.Status(fiber.ErrBadGateway.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
+
+	if match, err := internalJWT.CheckID(ID); !match || err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
 
 	//Get info from DB
-	relations, err := u.StorageService.GetRelations(ID, pageInt)
+	relations, err := s.StorageService.GetRelations(ID, pageInt)
 
 	if err != nil {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error in DB", "data": err.Error()})
@@ -169,7 +204,7 @@ func (u *UserhandlerService) GetRelations(c *fiber.Ctx) error {
 }
 
 //CreateRelation Create a new relation between users
-func (u *UserhandlerService) CreateRelation(c *fiber.Ctx) error {
+func (s *UserhandlerService) CreateRelation(c *fiber.Ctx) error {
 	//Get the relation info
 	var body *models.RelationRequest
 
@@ -182,7 +217,16 @@ func (u *UserhandlerService) CreateRelation(c *fiber.Ctx) error {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending from ID"})
 	}
 
-	body.FromEmail = strings.ToLower(body.FromID)
+	//Check the JWT ID
+	tk := c.Locals("user").(*jwt.Token)
+	if err := internalJWT.GetClaims(*tk); err != nil {
+		return c.Status(fiber.ErrBadGateway.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
+
+	if match, err := internalJWT.CheckID(body.FromID); !match || err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
+
 	//From Username
 	if len(strings.TrimSpace(body.FromName)) < 0 || strings.TrimSpace(body.FromName) == "" {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending from Username"})
@@ -210,7 +254,49 @@ func (u *UserhandlerService) CreateRelation(c *fiber.Ctx) error {
 
 	body.ToEmail = strings.ToLower(body.ToEmail)
 
-	if sucess, err := u.StorageService.AddRelation(body); sucess != true || err != nil {
+	if sucess, err := s.StorageService.AddRelation(body); sucess != true || err != nil {
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": "Error in create in DB", "data": err.Error()})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"status": "created", "message": "Relation created"})
+}
+
+//DeactivateRelation When the user want to delete a relation
+func (s *UserhandlerService) DeactivateRelation(c *fiber.Ctx) error {
+	//Get the relation info
+	var body *models.RelationRequest
+
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Review your body", "data": err.Error()})
+	}
+
+	//From ID
+	if len(strings.TrimSpace(body.FromID)) < 0 || strings.TrimSpace(body.FromID) == "" {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending from ID"})
+	}
+
+	//Check the JWT ID
+	tk := c.Locals("user").(*jwt.Token)
+	if err := internalJWT.GetClaims(*tk); err != nil {
+		return c.Status(fiber.ErrBadGateway.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
+
+	if match, err := internalJWT.CheckID(body.FromID); !match || err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
+
+	//To ID
+	if len(strings.TrimSpace(body.ToID)) < 0 || strings.TrimSpace(body.ToID) == "" {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending from ID"})
+	}
+
+	//Relation ID
+	if len(strings.TrimSpace(body.RelationID)) < 0 || strings.TrimSpace(body.RelationID) == "" {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending from ID"})
+	}
+
+	//Deactivate in DB
+	if sucess, err := s.StorageService.DeactivateRelation(body.RelationID, body.FromID, body.ToID); sucess != true || err != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": "Error in create in DB", "data": err.Error()})
 	}
 

@@ -3,20 +3,23 @@ package cache
 import (
 	"context"
 	"log"
-	"os"
 
-	//Autoload the env
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/environment"
 
 	"github.com/go-redis/redis/v8"
 )
 
 //NewRedisClient return a new redis client
 func NewRedisClient(service string) *redis.Client {
-	addr := os.Getenv(service + "_REDIS_ADDR")
+	addr, success := environment.AccessENV(service + "_REDIS_ADDR")
 
 	if addr == "" {
 		log.Fatalln("Error in Getting the ADDR from ENV")
+		return nil
+	}
+
+	if !success {
+		log.Fatalln("Error loading ENV")
 		return nil
 	}
 

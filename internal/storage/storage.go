@@ -1,16 +1,11 @@
 package storage
 
 import (
-	"fmt"
 	"log"
-	"os"
-	"strconv"
 
 	"github.com/jinzhu/gorm"
 
-	//Autoload the env
-	_ "github.com/joho/godotenv/autoload"
-
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/environment"
 	//Postgres Driver imported
 	_ "github.com/lib/pq"
 )
@@ -18,29 +13,16 @@ import (
 //ConnectDB connect to Postgres DB
 func ConnectDB(service string) *gorm.DB {
 	//Variables for DB
-	var (
-		host     = os.Getenv(service + "_DB_HOST")
-		user     = os.Getenv(service + "_DB_USER")
-		port     = os.Getenv(service + "_DB_PORT")
-		password = os.Getenv(service + "_DB_PASSWORD")
-		name     = os.Getenv(service + "_DB_NAME")
-	)
-	if host == "" {
+	dbAddr, success := environment.AccessENV(service + "_DB")
+	if !success {
 		log.Fatalln("Error loading ENV")
-		return nil
-	}
-
-	portInt, err := strconv.Atoi(port)
-
-	if err != nil {
-		log.Fatalln("Error in convert port to int the DB " + err.Error())
 		return nil
 	}
 
 	//Connect to DB
 	var DB *gorm.DB
 
-	DB, err = gorm.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, portInt, user, password, name))
+	DB, err := gorm.Open(dbAddr)
 
 	//Check for Errors in DB
 	if err != nil {

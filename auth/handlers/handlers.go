@@ -85,3 +85,49 @@ func (s *AuthHandlerService) Register(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"status": "created", "message": "User Created created"})
 }
+
+//Login the User
+func (s *AuthHandlerService) Login(c *fiber.Ctx) error {
+	var userBody models.LoginRequest
+
+	if err := c.BodyParser(&userBody); err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Review your body", "data": err.Error()})
+	}
+
+	//Username
+	if len(strings.TrimSpace(userBody.Username)) < 0 || strings.TrimSpace(userBody.Username) == "" {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Must Send Username"})
+	}
+	userBody.Username = strings.ToLower(strings.TrimSpace(userBody.Username))
+
+	//Username
+	if len(strings.TrimSpace(userBody.Username)) < 0 || strings.TrimSpace(userBody.Username) == "" {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Must Send Username"})
+	}
+	userBody.Username = strings.ToLower(strings.TrimSpace(userBody.Username))
+
+	//Email
+	if len(strings.TrimSpace(userBody.Email)) < 0 || strings.TrimSpace(userBody.Email) == "" {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Must Send Username"})
+	}
+	userBody.Email = strings.ToLower(strings.TrimSpace(userBody.Email))
+
+	//Password
+	if len(strings.TrimSpace(userBody.Password)) < 0 || strings.TrimSpace(userBody.Password) == "" {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Must Send Username"})
+	}
+
+	userClaims, success, err := s.storageService.Login(&userBody)
+
+	if !success || err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error login in DB", "data": err.Error()})
+	}
+
+	newToken, err := genereateJWT(*userClaims)
+
+	if newToken == "" || err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error in create JWT", "data": err.Error()})
+	}
+
+	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{"status": "accepted", "token": newToken})
+}
