@@ -9,18 +9,18 @@ import (
 var environment = make(map[string]string)
 
 //AccessENV Return the ENV if exits
-func AccessENV(key string) (string, bool) {
+func AccessENV(key string) string {
 	if environment[key] != "" {
-		return environment[key], true
+		return environment[key]
 	}
 
 	val := os.Getenv(key)
 
 	if val == "" || len(val) <= 0 {
-		return "", false
+		return ""
 	}
 
 	environment[key] = val
 
-	return val, true
+	return val
 }

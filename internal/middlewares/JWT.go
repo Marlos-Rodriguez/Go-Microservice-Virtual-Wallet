@@ -9,9 +9,9 @@ import (
 
 //JWTMiddleware Check the JWT of request
 func JWTMiddleware() fiber.Handler {
-	secrectKey, success := environment.AccessENV("SECRECT_KEY")
+	secrectKey := environment.AccessENV("SECRECT_KEY")
 
-	if !success {
+	if secrectKey == "" {
 		return func(c *fiber.Ctx) error {
 			return c.Status(500).JSON(&fiber.Map{
 				"success": false,

@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/jinzhu/gorm"
 
@@ -12,17 +14,29 @@ import (
 
 //ConnectDB connect to Postgres DB
 func ConnectDB(service string) *gorm.DB {
-	//Variables for DB
-	dbAddr, success := environment.AccessENV(service + "_DB")
-	if !success {
+	var (
+		host     = environment.AccessENV(service + "_DB_HOST")
+		user     = environment.AccessENV(service + "_DB_USER")
+		port     = environment.AccessENV(service + "_DB_PORT")
+		password = environment.AccessENV(service + "_DB_PASSWORD")
+		name     = environment.AccessENV(service + "_DB_NAME")
+	)
+	if host == "" {
 		log.Fatalln("Error loading ENV")
+		return nil
+	}
+
+	portInt, err := strconv.Atoi(port)
+
+	if err != nil {
+		log.Fatalln("Error in convert port to int the DB " + err.Error())
 		return nil
 	}
 
 	//Connect to DB
 	var DB *gorm.DB
 
-	DB, err := gorm.Open(dbAddr)
+	DB, err = gorm.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, portInt, user, password, name))
 
 	//Check for Errors in DB
 	if err != nil {

@@ -129,7 +129,7 @@ func (s *UserhandlerService) ModifyUser(c *fiber.Ctx) error {
 	}
 
 	//Birthday
-	if date, err := time.Parse("2006-01-02", body.Birthday); err != nil {
+	if date, err := time.Parse("2006-01-02", body.Birthday); err == nil {
 		userDB.Profile.Birthday = date
 	}
 

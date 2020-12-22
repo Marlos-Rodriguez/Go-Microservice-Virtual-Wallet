@@ -9,10 +9,10 @@ import (
 
 func createServer(app *fiber.App) {
 	//Get the Port from ENV
-	PORT := environment.AccessENV("USER_PORT")
+	PORT := environment.AccessENV("AUTH_PORT")
 
 	if PORT == "" {
-		PORT = "3000"
+		PORT = "3001"
 	}
 
 	log.Println("Server running in Port: " + PORT)

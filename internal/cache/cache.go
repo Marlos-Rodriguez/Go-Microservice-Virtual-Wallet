@@ -11,15 +11,10 @@ import (
 
 //NewRedisClient return a new redis client
 func NewRedisClient(service string) *redis.Client {
-	addr, success := environment.AccessENV(service + "_REDIS_ADDR")
+	addr := environment.AccessENV(service + "_REDIS_ADDR")
 
 	if addr == "" {
 		log.Fatalln("Error in Getting the ADDR from ENV")
-		return nil
-	}
-
-	if !success {
-		log.Fatalln("Error loading ENV")
 		return nil
 	}
 

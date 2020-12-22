@@ -4,12 +4,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gofiber/fiber/v2"
-
-	UserModels "github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/models"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/storage"
+	internalJWT "github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/jwt"
+	UserModels "github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 	"github.com/go-redis/redis/v8"
 	"github.com/jinzhu/gorm"
 )
@@ -75,7 +76,7 @@ func (s *AuthHandlerService) Register(c *fiber.Ctx) error {
 	}
 
 	//Birthday
-	if date, err := time.Parse("2006-01-02", newUser.Birthday); err != nil {
+	if date, err := time.Parse("2006-01-02", newUser.Birthday); err == nil {
 		userDB.Profile.Birthday = date
 	}
 
@@ -100,6 +101,42 @@ func (s *AuthHandlerService) Login(c *fiber.Ctx) error {
 	}
 	userBody.Username = strings.ToLower(strings.TrimSpace(userBody.Username))
 
+	//Email
+	if len(strings.TrimSpace(userBody.Email)) < 0 || strings.TrimSpace(userBody.Email) == "" {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Must Send Username"})
+	}
+	userBody.Email = strings.ToLower(strings.TrimSpace(userBody.Email))
+
+	//Password
+	if len(strings.TrimSpace(userBody.Password)) < 0 || strings.TrimSpace(userBody.Password) == "" {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Must Send Username"})
+	}
+
+	//Login in DB
+	userClaims, success, err := s.storageService.Login(&userBody)
+
+	if !success || err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error login in DB", "data": err.Error()})
+	}
+
+	//Create JWT
+	newToken, err := genereateJWT(*userClaims)
+
+	if newToken == "" || err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error in create JWT", "data": err.Error()})
+	}
+
+	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{"status": "accepted", "token": newToken})
+}
+
+//ReactivateUser Active a User
+func (s *AuthHandlerService) ReactivateUser(c *fiber.Ctx) error {
+	var userBody models.LoginRequest
+
+	if err := c.BodyParser(&userBody); err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Review your body", "data": err.Error()})
+	}
+
 	//Username
 	if len(strings.TrimSpace(userBody.Username)) < 0 || strings.TrimSpace(userBody.Username) == "" {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Must Send Username"})
@@ -117,17 +154,58 @@ func (s *AuthHandlerService) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Must Send Username"})
 	}
 
-	userClaims, success, err := s.storageService.Login(&userBody)
-
-	if !success || err != nil {
-		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error login in DB", "data": err.Error()})
+	//Update in DB
+	if sucess, err := s.storageService.ReactivateUser(&userBody); !sucess || err != nil {
+		return c.Status(fiber.ErrBadGateway.Code).JSON(fiber.Map{"status": "error", "message": "Error in Update User", "data": err.Error()})
 	}
 
-	newToken, err := genereateJWT(*userClaims)
+	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{"status": "accepted", "message": "User Reactivated"})
+}
 
-	if newToken == "" || err != nil {
-		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error in create JWT", "data": err.Error()})
+//DeactivateUser Deactivate a User
+func (s *AuthHandlerService) DeactivateUser(c *fiber.Ctx) error {
+	var userBody models.DeactivateUserRequest
+
+	if err := c.BodyParser(&userBody); err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Review your body", "data": err.Error()})
 	}
 
-	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{"status": "accepted", "token": newToken})
+	//ID
+	if len(strings.TrimSpace(userBody.ID)) < 0 || strings.TrimSpace(userBody.ID) == "" {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Must Send ID"})
+	}
+
+	//Check the JWT ID
+	tk := c.Locals("user").(*jwt.Token)
+	if err := internalJWT.GetClaims(*tk); err != nil {
+		return c.Status(fiber.ErrBadGateway.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
+
+	if match, err := internalJWT.CheckID(userBody.ID); !match || err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
+
+	//Username
+	if len(strings.TrimSpace(userBody.Username)) < 0 || strings.TrimSpace(userBody.Username) == "" {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Must Send Username"})
+	}
+	userBody.Username = strings.ToLower(strings.TrimSpace(userBody.Username))
+
+	//Email
+	if len(strings.TrimSpace(userBody.Email)) < 0 || strings.TrimSpace(userBody.Email) == "" {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Must Send Username"})
+	}
+	userBody.Email = strings.ToLower(strings.TrimSpace(userBody.Email))
+
+	//Password
+	if len(strings.TrimSpace(userBody.Password)) < 0 || strings.TrimSpace(userBody.Password) == "" {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Must Send Username"})
+	}
+
+	//Update in DB
+	if sucess, err := s.storageService.DeactivateUser(userBody); !sucess || err != nil {
+		return c.Status(fiber.ErrBadGateway.Code).JSON(fiber.Map{"status": "error", "message": "Error in Update User", "data": err.Error()})
+	}
+
+	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{"status": "accepted", "message": "User Deleted"})
 }

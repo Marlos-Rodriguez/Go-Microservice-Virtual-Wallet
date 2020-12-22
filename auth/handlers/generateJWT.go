@@ -10,14 +10,16 @@ import (
 )
 
 func genereateJWT(claims models.JWTLogin) (string, error) {
-	secrectKey, sucess := environment.AccessENV("SECRECT_KEY")
+	//Get Key
+	secrectKey := environment.AccessENV("SECRECT_KEY")
 
-	if !sucess {
+	if secrectKey == "" {
 		return "", errors.New("Error in get Secrect Key From ENV")
 	}
 
 	sign := []byte(secrectKey)
 
+	//Make Claims
 	payload := jwt.MapClaims{
 		"user_id":   claims.ID,
 		"user_name": claims.Username,
@@ -25,6 +27,7 @@ func genereateJWT(claims models.JWTLogin) (string, error) {
 		"exp":       time.Now().Add(time.Hour * 24).Unix(),
 	}
 
+	//Sign the JWT
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
 
 	signedToken, err := token.SignedString(sign)
