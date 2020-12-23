@@ -87,7 +87,7 @@ func (s *AuthStorageService) Register(newUser *UserModels.User) (bool, error) {
 	s.SetRegisterCache(newUser.UserName, newUser.Profile.Email, newUser)
 
 	//Create movement
-	change := "New User with UserName " + newUser.UserName + "and Email " + newUser.Profile.Email
+	change := "New User with UserName " + newUser.UserName + " and Email " + newUser.Profile.Email
 
 	success, err := grpcClient.CreateMovement("User & Profile", change, "Auth Service")
 
@@ -214,9 +214,9 @@ func (s *AuthStorageService) ReactivateUser(user *models.LoginRequest) (bool, er
 
 	//Update in DB
 	go s.db.Model(&UserModels.User{}).Where(&UserModels.User{UserID: profileDB.UserID, UserName: user.Username}).
-		Update(&UserModels.User{IsActive: false, UpdatedAt: time.Now()})
+		Update(&UserModels.User{IsActive: true, UpdatedAt: time.Now()})
 	s.db.Model(&UserModels.Profile{}).Where(&UserModels.Profile{UserID: profileDB.UserID, Email: user.Email}).
-		Update(&UserModels.Profile{IsActive: false, UpdatedAt: time.Now()})
+		Update(&UserModels.Profile{IsActive: true, UpdatedAt: time.Now()})
 
 	if s.db.Error != nil {
 		return false, s.db.Error
@@ -250,9 +250,9 @@ func (s *AuthStorageService) DeactivateUser(user models.DeactivateUserRequest) (
 		}
 
 		go s.db.Model(&UserModels.User{}).Where(&UserModels.User{UserID: profileCache.UserID, UserName: user.Username}).
-			Update(&UserModels.User{IsActive: false, UpdatedAt: time.Now()})
+			Updates(map[string]interface{}{"is_active": false, "updated_at": time.Now()})
 		s.db.Model(&UserModels.Profile{}).Where(&UserModels.Profile{UserID: profileCache.UserID, Email: user.Email}).
-			Update(&UserModels.Profile{IsActive: false, UpdatedAt: time.Now()})
+			Updates(map[string]interface{}{"is_active": false, "updated_at": time.Now()})
 
 		if s.db.Error != nil {
 			return false, s.db.Error
@@ -289,9 +289,9 @@ func (s *AuthStorageService) DeactivateUser(user models.DeactivateUserRequest) (
 	}
 
 	go s.db.Model(&UserModels.User{}).Where(&UserModels.User{UserID: profileDB.UserID, UserName: user.Username}).
-		Update(&UserModels.User{IsActive: false, UpdatedAt: time.Now()})
+		Updates(map[string]interface{}{"is_active": false, "updated_at": time.Now()})
 	s.db.Model(&UserModels.Profile{}).Where(&UserModels.Profile{UserID: profileDB.UserID, Email: user.Email}).
-		Update(&UserModels.Profile{IsActive: false, UpdatedAt: time.Now()})
+		Updates(map[string]interface{}{"is_active": false, "updated_at": time.Now()})
 
 	if s.db.Error != nil {
 		return false, s.db.Error

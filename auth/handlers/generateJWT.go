@@ -6,7 +6,7 @@ import (
 
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/models"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/environment"
-	jwt "github.com/dgrijalva/jwt-go"
+	jwt "github.com/form3tech-oss/jwt-go"
 )
 
 func genereateJWT(claims models.JWTLogin) (string, error) {

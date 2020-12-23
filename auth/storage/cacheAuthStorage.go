@@ -20,13 +20,13 @@ func (s *AuthStorageService) CheckExistingUserCache(username string, email strin
 	val := s.rdb.Get(context.Background(), "RegisterUsername:"+username)
 
 	if val.Err() != redis.Nil {
-		return val.String(), true, nil
+		return val.Val(), true, nil
 	}
 
 	val = s.rdb.Get(context.Background(), "RegisterEmail:"+email)
 
 	if val.Err() != redis.Nil {
-		return val.String(), true, nil
+		return val.Val(), true, nil
 	}
 
 	return "", false, val.Err()

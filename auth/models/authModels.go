@@ -20,7 +20,7 @@ type LoginRequest struct {
 
 //JWTLogin struct for generate JWT
 type JWTLogin struct {
-	ID       string `json:"ID"`
+	ID       string `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -28,7 +28,7 @@ type JWTLogin struct {
 
 //DeactivateUserRequest struct
 type DeactivateUserRequest struct {
-	ID       string `json:"ID"`
+	ID       string `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
