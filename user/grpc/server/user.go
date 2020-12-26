@@ -82,3 +82,85 @@ func (s *Server) ChangeAvatar(ctx context.Context, request *AvatarName) (*Avatar
 
 	return &AvatarResponse{Sucess: true}, nil
 }
+
+//CheckUsersTransactions Check if the transaction is valid
+func (s *Server) CheckUsersTransactions(ctx context.Context, request *TransactionRequest) (*TransactionResponse, error) {
+	if request.FromID == "" || request.ToID == "" || request.Amount <= 0 {
+		return &TransactionResponse{
+			Exits:   false,
+			Actives: false,
+			Enough:  false,
+		}, errors.New("No valid Input")
+	}
+	fromUser, err := storageService.GetUser(request.FromID)
+
+	if fromUser == nil || err != nil {
+		return &TransactionResponse{
+			Exits:   false,
+			Actives: false,
+			Enough:  false,
+		}, err
+	}
+
+	if fromUser.Balance < request.Amount {
+		return &TransactionResponse{
+			Exits:   false,
+			Actives: false,
+			Enough:  false,
+		}, errors.New("User not have enough balance")
+	}
+
+	toUser, err := storageService.GetUser(request.ToID)
+
+	if toUser == nil || err != nil {
+		return &TransactionResponse{
+			Exits:   false,
+			Actives: false,
+			Enough:  false,
+		}, err
+	}
+
+	return &TransactionResponse{
+		Exits:   true,
+		Actives: true,
+		Enough:  true,
+	}, nil
+}
+
+//MakeTransaction Between Users
+func (s *Server) MakeTransaction(ctx context.Context, request *TransactionRequest) (*NewTransactionResponse, error) {
+	if request.FromID == "" || request.ToID == "" || request.Amount <= 0 {
+		return &NewTransactionResponse{Sucess: false}, errors.New("No valid Input")
+	}
+
+	fromUser, err := storageService.GetUser(request.FromID)
+
+	if fromUser == nil || err != nil {
+		return &NewTransactionResponse{Sucess: false}, err
+	}
+
+	if fromUser.Balance < request.Amount {
+		return &NewTransactionResponse{Sucess: false}, errors.New("User not have enough balance")
+	}
+
+	toUser, err := storageService.GetUser(request.ToID)
+
+	if toUser == nil || err != nil {
+		return &NewTransactionResponse{Sucess: false}, err
+	}
+
+	var fromUserDB *models.User = new(models.User)
+	fromUserDB.Balance -= float64(request.Amount)
+
+	var toUserDB *models.User = new(models.User)
+	toUserDB.Balance += float64(request.Amount)
+
+	if success, err := storageService.ModifyUser(fromUserDB, request.FromID, ""); !success || err != nil {
+		return &NewTransactionResponse{Sucess: false}, err
+	}
+	if success, err := storageService.ModifyUser(toUserDB, request.ToID, ""); !success || err != nil {
+		return &NewTransactionResponse{Sucess: false}, err
+	}
+
+	return &NewTransactionResponse{Sucess: true}, nil
+}

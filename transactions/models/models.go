@@ -14,7 +14,7 @@ type Transaction struct {
 	ToUser    uuid.UUID `gorm:"not null"`
 	ToName    string    `gorm:"not null"`
 	Amount    float32   `gorm:"not null"`
-	message   string
+	Message   string
 	CreatedAt time.Time `gorm:"not null"`
 	UpdatedAt time.Time `gorm:"not null"`
 	IsActive  bool      `gorm:"not null;default:false"`
@@ -22,12 +22,22 @@ type Transaction struct {
 
 //TransactionResponse struct
 type TransactionResponse struct {
-	TsID      uuid.UUID `json:"tsID"`
-	FromUser  uuid.UUID `json:"fromId"`
-	FromName  string    `json:"fromName"`
-	ToUser    uuid.UUID `json:"toId"`
-	ToName    string    `json:"toName"`
-	Amount    float32   `json:"amount"`
-	Message   string    `json:"message,omitempty"`
-	CreatedAt time.Time `json:"createAt"`
+	TsID      string  `json:"tsID"`
+	FromUser  string  `json:"fromId"`
+	FromName  string  `json:"fromName"`
+	ToUser    string  `json:"toId"`
+	ToName    string  `json:"toName"`
+	Amount    float32 `json:"amount"`
+	Message   string  `json:"message,omitempty"`
+	CreatedAt string  `json:"createAt"`
+}
+
+//TransactionRequest struct
+type TransactionRequest struct {
+	FromUser string  `json:"fromId"`
+	FromName string  `json:"fromName"`
+	ToUser   string  `json:"toId"`
+	ToName   string  `json:"toName"`
+	Amount   float32 `json:"amount"`
+	Message  string  `json:"message,omitempty"`
 }

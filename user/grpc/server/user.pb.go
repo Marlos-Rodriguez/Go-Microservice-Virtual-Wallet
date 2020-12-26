@@ -327,6 +327,179 @@ func (x *AvatarResponse) GetSucess() bool {
 	return false
 }
 
+type TransactionRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	FromID string  `protobuf:"bytes,1,opt,name=fromID,proto3" json:"fromID,omitempty"`
+	ToID   string  `protobuf:"bytes,2,opt,name=toID,proto3" json:"toID,omitempty"`
+	Amount float64 `protobuf:"fixed64,3,opt,name=amount,proto3" json:"amount,omitempty"`
+}
+
+func (x *TransactionRequest) Reset() {
+	*x = TransactionRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_server_user_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TransactionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TransactionRequest) ProtoMessage() {}
+
+func (x *TransactionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_server_user_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TransactionRequest.ProtoReflect.Descriptor instead.
+func (*TransactionRequest) Descriptor() ([]byte, []int) {
+	return file_server_user_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *TransactionRequest) GetFromID() string {
+	if x != nil {
+		return x.FromID
+	}
+	return ""
+}
+
+func (x *TransactionRequest) GetToID() string {
+	if x != nil {
+		return x.ToID
+	}
+	return ""
+}
+
+func (x *TransactionRequest) GetAmount() float64 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+type TransactionResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Exits   bool `protobuf:"varint,1,opt,name=exits,proto3" json:"exits,omitempty"`
+	Actives bool `protobuf:"varint,2,opt,name=actives,proto3" json:"actives,omitempty"`
+	Enough  bool `protobuf:"varint,3,opt,name=enough,proto3" json:"enough,omitempty"`
+}
+
+func (x *TransactionResponse) Reset() {
+	*x = TransactionResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_server_user_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TransactionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TransactionResponse) ProtoMessage() {}
+
+func (x *TransactionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_server_user_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TransactionResponse.ProtoReflect.Descriptor instead.
+func (*TransactionResponse) Descriptor() ([]byte, []int) {
+	return file_server_user_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *TransactionResponse) GetExits() bool {
+	if x != nil {
+		return x.Exits
+	}
+	return false
+}
+
+func (x *TransactionResponse) GetActives() bool {
+	if x != nil {
+		return x.Actives
+	}
+	return false
+}
+
+func (x *TransactionResponse) GetEnough() bool {
+	if x != nil {
+		return x.Enough
+	}
+	return false
+}
+
+type NewTransactionResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Sucess bool `protobuf:"varint,1,opt,name=sucess,proto3" json:"sucess,omitempty"`
+}
+
+func (x *NewTransactionResponse) Reset() {
+	*x = NewTransactionResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_server_user_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *NewTransactionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NewTransactionResponse) ProtoMessage() {}
+
+func (x *NewTransactionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_server_user_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NewTransactionResponse.ProtoReflect.Descriptor instead.
+func (*NewTransactionResponse) Descriptor() ([]byte, []int) {
+	return file_server_user_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *NewTransactionResponse) GetSucess() bool {
+	if x != nil {
+		return x.Sucess
+	}
+	return false
+}
+
 var File_server_user_proto protoreflect.FileDescriptor
 
 var file_server_user_proto_rawDesc = []byte{
@@ -350,21 +523,45 @@ var file_server_user_proto_rawDesc = []byte{
 	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x4e, 0x61, 0x6d, 0x65, 0x22, 0x28, 0x0a, 0x0e, 0x41,
 	0x76, 0x61, 0x74, 0x61, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x16, 0x0a,
 	0x06, 0x73, 0x75, 0x63, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x73,
-	0x75, 0x63, 0x65, 0x73, 0x73, 0x32, 0xc5, 0x01, 0x0a, 0x0b, 0x55, 0x73, 0x65, 0x72, 0x53, 0x65,
-	0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x36, 0x0a, 0x09, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x55, 0x73,
-	0x65, 0x72, 0x12, 0x13, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x55, 0x73, 0x65, 0x72,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72,
-	0x2e, 0x55, 0x73, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x42, 0x0a,
-	0x0d, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52, 0x65, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x17,
-	0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x52, 0x65, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x18, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72,
-	0x2e, 0x52, 0x65, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x12, 0x3a, 0x0a, 0x0c, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x41, 0x76, 0x61, 0x74, 0x61,
-	0x72, 0x12, 0x12, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x41, 0x76, 0x61, 0x74, 0x61,
-	0x72, 0x4e, 0x61, 0x6d, 0x65, 0x1a, 0x16, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x41,
-	0x76, 0x61, 0x74, 0x61, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x0a, 0x5a,
-	0x08, 0x2e, 0x3b, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x75, 0x63, 0x65, 0x73, 0x73, 0x22, 0x58, 0x0a, 0x12, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63,
+	0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x66,
+	0x72, 0x6f, 0x6d, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x66, 0x72, 0x6f,
+	0x6d, 0x49, 0x44, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x6f, 0x49, 0x44, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x04, 0x74, 0x6f, 0x49, 0x44, 0x12, 0x16, 0x0a, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e,
+	0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x01, 0x52, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x22,
+	0x5d, 0x0a, 0x13, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x65, 0x78, 0x69, 0x74, 0x73, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x05, 0x65, 0x78, 0x69, 0x74, 0x73, 0x12, 0x18, 0x0a, 0x07,
+	0x61, 0x63, 0x74, 0x69, 0x76, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x61,
+	0x63, 0x74, 0x69, 0x76, 0x65, 0x73, 0x12, 0x16, 0x0a, 0x06, 0x65, 0x6e, 0x6f, 0x75, 0x67, 0x68,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x65, 0x6e, 0x6f, 0x75, 0x67, 0x68, 0x22, 0x30,
+	0x0a, 0x16, 0x4e, 0x65, 0x77, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x75, 0x63, 0x65,
+	0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x73, 0x75, 0x63, 0x65, 0x73, 0x73,
+	0x32, 0xe7, 0x02, 0x0a, 0x0b, 0x55, 0x73, 0x65, 0x72, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
+	0x12, 0x36, 0x0a, 0x09, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x55, 0x73, 0x65, 0x72, 0x12, 0x13, 0x2e,
+	0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x55, 0x73, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x14, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x55, 0x73, 0x65, 0x72,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x42, 0x0a, 0x0d, 0x43, 0x68, 0x65, 0x63,
+	0x6b, 0x52, 0x65, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x17, 0x2e, 0x73, 0x65, 0x72, 0x76,
+	0x65, 0x72, 0x2e, 0x52, 0x65, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x18, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x52, 0x65, 0x6c, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x3a, 0x0a, 0x0c,
+	0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x12, 0x12, 0x2e, 0x73,
+	0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72, 0x4e, 0x61, 0x6d, 0x65,
+	0x1a, 0x16, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x41, 0x76, 0x61, 0x74, 0x61, 0x72,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x51, 0x0a, 0x16, 0x43, 0x68, 0x65, 0x63,
+	0x6b, 0x55, 0x73, 0x65, 0x72, 0x73, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f,
+	0x6e, 0x73, 0x12, 0x1a, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x54, 0x72, 0x61, 0x6e,
+	0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1b,
+	0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74,
+	0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x4d, 0x0a, 0x0f, 0x4d,
+	0x61, 0x6b, 0x65, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1a,
+	0x2e, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74,
+	0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1e, 0x2e, 0x73, 0x65, 0x72,
+	0x76, 0x65, 0x72, 0x2e, 0x4e, 0x65, 0x77, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69,
+	0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b,
+	0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -379,24 +576,31 @@ func file_server_user_proto_rawDescGZIP() []byte {
 	return file_server_user_proto_rawDescData
 }
 
-var file_server_user_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_server_user_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_server_user_proto_goTypes = []interface{}{
-	(*UserRequest)(nil),      // 0: server.UserRequest
-	(*UserResponse)(nil),     // 1: server.UserResponse
-	(*RelationRequest)(nil),  // 2: server.RelationRequest
-	(*RelationResponse)(nil), // 3: server.RelationResponse
-	(*AvatarName)(nil),       // 4: server.AvatarName
-	(*AvatarResponse)(nil),   // 5: server.AvatarResponse
+	(*UserRequest)(nil),            // 0: server.UserRequest
+	(*UserResponse)(nil),           // 1: server.UserResponse
+	(*RelationRequest)(nil),        // 2: server.RelationRequest
+	(*RelationResponse)(nil),       // 3: server.RelationResponse
+	(*AvatarName)(nil),             // 4: server.AvatarName
+	(*AvatarResponse)(nil),         // 5: server.AvatarResponse
+	(*TransactionRequest)(nil),     // 6: server.TransactionRequest
+	(*TransactionResponse)(nil),    // 7: server.TransactionResponse
+	(*NewTransactionResponse)(nil), // 8: server.NewTransactionResponse
 }
 var file_server_user_proto_depIdxs = []int32{
 	0, // 0: server.UserService.CheckUser:input_type -> server.UserRequest
 	2, // 1: server.UserService.CheckRelation:input_type -> server.RelationRequest
 	4, // 2: server.UserService.ChangeAvatar:input_type -> server.AvatarName
-	1, // 3: server.UserService.CheckUser:output_type -> server.UserResponse
-	3, // 4: server.UserService.CheckRelation:output_type -> server.RelationResponse
-	5, // 5: server.UserService.ChangeAvatar:output_type -> server.AvatarResponse
-	3, // [3:6] is the sub-list for method output_type
-	0, // [0:3] is the sub-list for method input_type
+	6, // 3: server.UserService.CheckUsersTransactions:input_type -> server.TransactionRequest
+	6, // 4: server.UserService.MakeTransaction:input_type -> server.TransactionRequest
+	1, // 5: server.UserService.CheckUser:output_type -> server.UserResponse
+	3, // 6: server.UserService.CheckRelation:output_type -> server.RelationResponse
+	5, // 7: server.UserService.ChangeAvatar:output_type -> server.AvatarResponse
+	7, // 8: server.UserService.CheckUsersTransactions:output_type -> server.TransactionResponse
+	8, // 9: server.UserService.MakeTransaction:output_type -> server.NewTransactionResponse
+	5, // [5:10] is the sub-list for method output_type
+	0, // [0:5] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -480,6 +684,42 @@ func file_server_user_proto_init() {
 				return nil
 			}
 		}
+		file_server_user_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TransactionRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_server_user_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TransactionResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_server_user_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*NewTransactionResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -487,7 +727,7 @@ func file_server_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_server_user_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
@@ -516,6 +756,8 @@ type UserServiceClient interface {
 	CheckUser(ctx context.Context, in *UserRequest, opts ...grpc.CallOption) (*UserResponse, error)
 	CheckRelation(ctx context.Context, in *RelationRequest, opts ...grpc.CallOption) (*RelationResponse, error)
 	ChangeAvatar(ctx context.Context, in *AvatarName, opts ...grpc.CallOption) (*AvatarResponse, error)
+	CheckUsersTransactions(ctx context.Context, in *TransactionRequest, opts ...grpc.CallOption) (*TransactionResponse, error)
+	MakeTransaction(ctx context.Context, in *TransactionRequest, opts ...grpc.CallOption) (*NewTransactionResponse, error)
 }
 
 type userServiceClient struct {
@@ -553,11 +795,31 @@ func (c *userServiceClient) ChangeAvatar(ctx context.Context, in *AvatarName, op
 	return out, nil
 }
 
+func (c *userServiceClient) CheckUsersTransactions(ctx context.Context, in *TransactionRequest, opts ...grpc.CallOption) (*TransactionResponse, error) {
+	out := new(TransactionResponse)
+	err := c.cc.Invoke(ctx, "/server.UserService/CheckUsersTransactions", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) MakeTransaction(ctx context.Context, in *TransactionRequest, opts ...grpc.CallOption) (*NewTransactionResponse, error) {
+	out := new(NewTransactionResponse)
+	err := c.cc.Invoke(ctx, "/server.UserService/MakeTransaction", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 type UserServiceServer interface {
 	CheckUser(context.Context, *UserRequest) (*UserResponse, error)
 	CheckRelation(context.Context, *RelationRequest) (*RelationResponse, error)
 	ChangeAvatar(context.Context, *AvatarName) (*AvatarResponse, error)
+	CheckUsersTransactions(context.Context, *TransactionRequest) (*TransactionResponse, error)
+	MakeTransaction(context.Context, *TransactionRequest) (*NewTransactionResponse, error)
 }
 
 // UnimplementedUserServiceServer can be embedded to have forward compatible implementations.
@@ -572,6 +834,12 @@ func (*UnimplementedUserServiceServer) CheckRelation(context.Context, *RelationR
 }
 func (*UnimplementedUserServiceServer) ChangeAvatar(context.Context, *AvatarName) (*AvatarResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ChangeAvatar not implemented")
+}
+func (*UnimplementedUserServiceServer) CheckUsersTransactions(context.Context, *TransactionRequest) (*TransactionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckUsersTransactions not implemented")
+}
+func (*UnimplementedUserServiceServer) MakeTransaction(context.Context, *TransactionRequest) (*NewTransactionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MakeTransaction not implemented")
 }
 
 func RegisterUserServiceServer(s *grpc.Server, srv UserServiceServer) {
@@ -632,6 +900,42 @@ func _UserService_ChangeAvatar_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_CheckUsersTransactions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TransactionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).CheckUsersTransactions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/server.UserService/CheckUsersTransactions",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).CheckUsersTransactions(ctx, req.(*TransactionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_MakeTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TransactionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).MakeTransaction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/server.UserService/MakeTransaction",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).MakeTransaction(ctx, req.(*TransactionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _UserService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "server.UserService",
 	HandlerType: (*UserServiceServer)(nil),
@@ -647,6 +951,14 @@ var _UserService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ChangeAvatar",
 			Handler:    _UserService_ChangeAvatar_Handler,
+		},
+		{
+			MethodName: "CheckUsersTransactions",
+			Handler:    _UserService_CheckUsersTransactions_Handler,
+		},
+		{
+			MethodName: "MakeTransaction",
+			Handler:    _UserService_MakeTransaction_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

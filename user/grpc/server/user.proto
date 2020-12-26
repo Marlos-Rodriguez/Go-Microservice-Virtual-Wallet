@@ -8,6 +8,8 @@ service UserService {
     rpc CheckUser (UserRequest) returns (UserResponse);
     rpc CheckRelation (RelationRequest) returns (RelationResponse);
     rpc ChangeAvatar (AvatarName) returns (AvatarResponse);
+    rpc CheckUsersTransactions (TransactionRequest) returns (TransactionResponse);
+    rpc MakeTransaction (TransactionRequest) returns (NewTransactionResponse);
 }
 
 message UserRequest {
@@ -33,5 +35,21 @@ message AvatarName {
 }
 
 message AvatarResponse {
+    bool sucess = 1;
+}
+
+message TransactionRequest {
+    string fromID = 1;
+    string toID = 2;
+    double amount = 3;
+}
+
+message TransactionResponse {
+    bool exits = 1;
+    bool actives = 2;
+    bool enough = 3;
+}
+
+message NewTransactionResponse {
     bool sucess = 1;
 }

@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+option go_package = ".;server";
+
+package server;
+
+service TransactionService {
+    rpc GetTransactions (TransactionRequest) returns (TransactionResponse);
+}
+
+message TransactionRequest {
+    string ID = 1;
+}
+
+message TransactionResponse {
+    repeated Transaction transactions = 1;
+}
+
+message Transaction {
+    string tsID = 1;
+    string fromID = 2;
+    string toID = 3;
+    string fromName = 4;
+    string toName = 5;
+    string message = 6;
+    string createAt = 7;
+}

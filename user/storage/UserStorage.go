@@ -58,6 +58,10 @@ func (s *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 
 	//Here have to get the last transactions from the transaction service
 
+	if !userDB.IsActive {
+		return nil, errors.New("User is not active")
+	}
+
 	//Assing the info for response
 	userResponse := &models.UserResponse{
 		UserID:   userDB.UserID,
@@ -324,6 +328,7 @@ func (s *UserStorageService) GetRelations(ID string, page int) ([]*models.Relati
 		return nil, nil
 	}
 
+	//Set in Cache
 	if page > 1 {
 		s.SetRelationCache(relationDB, ID)
 	}
