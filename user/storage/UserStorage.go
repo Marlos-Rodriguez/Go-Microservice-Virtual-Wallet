@@ -23,6 +23,7 @@ type UserStorageService struct {
 //NewUserStorageService Create a new storage user service
 func NewUserStorageService(newDB *gorm.DB, newRDB *redis.Client) UserStorageService {
 	go grpc.StartClient()
+	go startTransactionClient()
 
 	newDB.AutoMigrate(&models.User{}, &models.Profile{}, &models.Relation{})
 
@@ -36,6 +37,7 @@ func (s *UserStorageService) CloseDB() {
 	s.db.Close()
 	s.rdb.Close()
 	grpc.CloseClient()
+	closeTransactionClient()
 }
 
 //GetUser Get basic user info
@@ -57,6 +59,11 @@ func (s *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 	}
 
 	//Here have to get the last transactions from the transaction service
+	transactions, success, err := GetTransactions(ID)
+
+	if !success || err != nil {
+		return nil, err
+	}
 
 	if !userDB.IsActive {
 		return nil, errors.New("User is not active")
@@ -64,10 +71,11 @@ func (s *UserStorageService) GetUser(ID string) (*models.UserResponse, error) {
 
 	//Assing the info for response
 	userResponse := &models.UserResponse{
-		UserID:   userDB.UserID,
-		UserName: userDB.UserName,
-		Balance:  userDB.Balance,
-		Avatar:   userDB.Profile.Avatar,
+		UserID:           userDB.UserID,
+		UserName:         userDB.UserName,
+		Balance:          userDB.Balance,
+		Avatar:           userDB.Profile.Avatar,
+		LastTransactions: transactions,
 	}
 
 	//Set in Redis for Cache

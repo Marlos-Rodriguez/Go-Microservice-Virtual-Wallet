@@ -22,6 +22,7 @@ message Transaction {
     string toID = 3;
     string fromName = 4;
     string toName = 5;
-    string message = 6;
-    string createAt = 7;
+    float amount = 6;
+    string message = 7;
+    string createAt = 8;
 }

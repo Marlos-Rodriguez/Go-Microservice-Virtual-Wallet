@@ -61,8 +61,6 @@ func (s *Server) CheckRelation(ctx context.Context, request *RelationRequest) (*
 		return &RelationResponse{Exits: false}, err
 	}
 
-	storageService.CloseDB()
-
 	return &RelationResponse{Exits: exits}, nil
 }
 

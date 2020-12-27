@@ -13,7 +13,7 @@ import (
 func NewGRPCServer() {
 	lis, err := net.Listen("tcp", ":9002")
 	if err != nil {
-		log.Fatalf("Failed to listen on Port :9001 %v", err)
+		log.Fatalf("Failed to listen on Port :9002 %v", err)
 	}
 
 	s := server.Server{}
