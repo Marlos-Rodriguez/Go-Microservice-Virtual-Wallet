@@ -232,7 +232,7 @@ func (s *UserhandlerService) CreateRelation(c *fiber.Ctx) error {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error sending from Username"})
 	}
 
-	body.FromName = strings.ToLower(body.FromName)
+	body.FromName = strings.TrimSpace(strings.ToLower(body.FromName))
 
 	//From Email
 	if len(body.FromEmail) < 0 || body.FromEmail == "" {

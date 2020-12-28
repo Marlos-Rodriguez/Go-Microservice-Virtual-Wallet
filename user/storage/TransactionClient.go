@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
+	TSserver "github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/grpc/server"
 	TSModels "github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/models"
-	TSserver "github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/server"
 	"google.golang.org/grpc"
 )
 

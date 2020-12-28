@@ -82,8 +82,8 @@ func (s *Server) ChangeAvatar(ctx context.Context, request *AvatarName) (*Avatar
 }
 
 //CheckUsersTransactions Check if the transaction is valid
-func (s *Server) CheckUsersTransactions(ctx context.Context, request *TransactionRequest) (*TransactionResponse, error) {
-	if request.FromID == "" || request.ToID == "" || request.Amount <= 0 {
+func (s *Server) CheckUsersTransactions(ctx context.Context, request *CheckTransactionRequest) (*TransactionResponse, error) {
+	if request.FromID == "" || request.ToID == "" || request.Amount <= 0 || request.Password == "" {
 		return &TransactionResponse{
 			Exits:   false,
 			Actives: false,
@@ -93,6 +93,14 @@ func (s *Server) CheckUsersTransactions(ctx context.Context, request *Transactio
 	fromUser, err := storageService.GetUser(request.FromID)
 
 	if fromUser == nil || err != nil {
+		return &TransactionResponse{
+			Exits:   false,
+			Actives: false,
+			Enough:  false,
+		}, err
+	}
+
+	if success, err := storageService.CheckPassword(request.FromID, request.Password); !success || err != nil {
 		return &TransactionResponse{
 			Exits:   false,
 			Actives: false,

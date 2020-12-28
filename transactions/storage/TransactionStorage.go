@@ -86,25 +86,29 @@ func (s *TransactionStorageService) GetTransactions(userID string, page int) ([]
 }
 
 //CreateTransaction between users
-func (s *TransactionStorageService) CreateTransaction(transaction models.TransactionRequest) (bool, error) {
+func (s *TransactionStorageService) CreateTransaction(transaction models.TransactionRequest) (*models.TransactionResponse, bool, error) {
 
 	//Check For User Active & Amount
-	if success, err := grpcClient.CheckUserTransaction(transaction.FromUser, transaction.ToUser, transaction.Amount); !success || err != nil {
-		return false, err
+	if success, err := grpcClient.CheckUserTransaction(
+		transaction.FromUser,
+		transaction.ToUser,
+		transaction.Amount,
+		transaction.Password); !success || err != nil {
+		return nil, false, err
 	}
 
 	//Update Amount
 	if success, err := grpcClient.MakeTransaction(transaction.FromUser, transaction.ToUser, transaction.Amount); !success || err != nil {
-		return false, err
+		return nil, false, err
 	}
 
 	fromID, err := uuid.Parse(transaction.FromUser)
 	if err != nil {
-		return false, errors.New("Error converting the ID in DB")
+		return nil, false, errors.New("Error converting the ID in DB")
 	}
 	toID, err := uuid.Parse(transaction.ToUser)
 	if err != nil {
-		return false, errors.New("Error converting the ID in DB")
+		return nil, false, errors.New("Error converting the ID in DB")
 	}
 
 	//Set to DB transaction
@@ -123,7 +127,7 @@ func (s *TransactionStorageService) CreateTransaction(transaction models.Transac
 
 	//Create relation in DB
 	if err := s.db.Create(&newTransaction).Error; err != nil {
-		return false, err
+		return nil, false, err
 	}
 
 	movement := fmt.Sprintf("Trasaction of %.2f from %s to %s", transaction.Amount, transaction.FromName, transaction.ToName)
@@ -137,5 +141,16 @@ func (s *TransactionStorageService) CreateTransaction(transaction models.Transac
 	go s.UpdateTransactionCache(transaction.FromUser)
 	s.UpdateTransactionCache(transaction.ToUser)
 
-	return true, nil
+	TransactionResponse := models.TransactionResponse{
+		TsID:      newTransaction.TsID.String(),
+		FromUser:  newTransaction.FromUser.String(),
+		FromName:  newTransaction.FromName,
+		ToUser:    newTransaction.ToUser.String(),
+		ToName:    newTransaction.ToName,
+		Amount:    newTransaction.Amount,
+		Message:   newTransaction.Message,
+		CreatedAt: newTransaction.CreatedAt.String(),
+	}
+
+	return &TransactionResponse, true, nil
 }

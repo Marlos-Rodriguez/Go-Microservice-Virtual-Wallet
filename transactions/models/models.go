@@ -36,6 +36,7 @@ type TransactionResponse struct {
 type TransactionRequest struct {
 	FromUser string  `json:"fromId"`
 	FromName string  `json:"fromName"`
+	Password string  `json:"password"`
 	ToUser   string  `json:"toId"`
 	ToName   string  `json:"toName"`
 	Amount   float32 `json:"amount"`

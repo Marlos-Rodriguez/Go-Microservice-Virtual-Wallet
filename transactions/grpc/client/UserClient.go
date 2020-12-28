@@ -28,11 +28,12 @@ func closeUserClient() {
 }
 
 //CheckUserTransaction Create a new movement in DB
-func CheckUserTransaction(fromID string, toID string, amount float32) (bool, error) {
-	newTransaction := &userGRPC.TransactionRequest{
-		FromID: fromID,
-		ToID:   toID,
-		Amount: float64(amount),
+func CheckUserTransaction(fromID string, toID string, amount float32, password string) (bool, error) {
+	newTransaction := &userGRPC.CheckTransactionRequest{
+		FromID:   fromID,
+		ToID:     toID,
+		Amount:   float64(amount),
+		Password: password,
 	}
 
 	response, err := userClient.CheckUsersTransactions(context.Background(), newTransaction)

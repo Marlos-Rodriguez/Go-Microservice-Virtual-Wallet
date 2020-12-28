@@ -8,6 +8,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/utils"
 	grpc "github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/grpc/client"
@@ -501,6 +502,28 @@ func (s *UserStorageService) DeactivateRelation(relationID string, FromID string
 
 	if succes == false {
 		log.Println("Error in Create a movement")
+	}
+
+	return true, nil
+}
+
+//CheckPassword with DB user
+func (s *UserStorageService) CheckPassword(id string, password string) (bool, error) {
+	//Convert Password
+	passwordBytes := []byte(password)
+
+	//Get from DB
+	var profileDB *models.Profile = new(models.Profile)
+
+	if err := s.db.Where("user_id = ?", id).First(&profileDB).Error; err != nil {
+		return false, err
+	}
+
+	passwordDB := []byte(profileDB.Password)
+
+	//Compare passwords
+	if err := bcrypt.CompareHashAndPassword(passwordDB, passwordBytes); err != nil {
+		return false, err
 	}
 
 	return true, nil
