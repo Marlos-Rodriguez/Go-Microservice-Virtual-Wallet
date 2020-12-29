@@ -254,7 +254,7 @@ func (s *UserhandlerService) CreateRelation(c *fiber.Ctx) error {
 
 	body.ToEmail = strings.ToLower(body.ToEmail)
 
-	if sucess, err := s.StorageService.AddRelation(body); sucess != true || err != nil {
+	if sucess, err := s.StorageService.AddRelation(body); !sucess || err != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": "Error in create in DB", "data": err.Error()})
 	}
 

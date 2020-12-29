@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"golang.org/x/net/context"
 
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
@@ -215,14 +216,20 @@ func (s *UserStorageService) GetRelationsCache(ID string) ([]*models.RelationRep
 }
 
 //UpdateRelations Update the first relations of User in Cache
-func (s *UserStorageService) UpdateRelations(ID string) {
+func (s *UserStorageService) UpdateRelations(ID string) error {
 	//Get info from DB
 	var relationDB []*models.Relation = []*models.Relation{new(models.Relation)}
 
-	s.db.Where("from_user = ?", ID).Or("to_user = ? AND mutual = true", ID).Find(&relationDB).Limit(30)
+	parseID, err := uuid.Parse(ID)
+
+	if err != nil {
+		return err
+	}
+
+	s.db.Where("from_user = ?", parseID).Or("to_user = ? AND mutual = true", parseID).Find(&relationDB).Limit(30)
 
 	if err := s.db.Error; err != nil {
-		log.Println("Error in DB in Cache " + err.Error())
+		return err
 	}
 
 	relationsCache, _ := json.Marshal(relationDB)
@@ -232,6 +239,8 @@ func (s *UserStorageService) UpdateRelations(ID string) {
 	status := s.rdb.Set(context.Background(), key, relationsCache, time.Hour*72)
 
 	if status.Err() != nil {
-		log.Println("Error in set in the cache " + status.Err().Error())
+		return status.Err()
 	}
+
+	return nil
 }

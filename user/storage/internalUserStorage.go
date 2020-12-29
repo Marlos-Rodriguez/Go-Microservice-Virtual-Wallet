@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"log"
+	"time"
 
 	"github.com/jinzhu/gorm"
 
@@ -55,7 +56,7 @@ func (u *UserStorageService) CheckExistingUser(ID string) (bool, bool, error) {
 func (u *UserStorageService) GetIDName(username string, email string) (string, error) {
 	var userDB *models.User = new(models.User)
 
-	if err := u.db.Where("username = ?", username).First(&userDB).Error; err != nil {
+	if err := u.db.Where(&models.User{UserName: username}).First(&userDB).Error; err != nil {
 		return "", err
 	}
 
@@ -65,7 +66,7 @@ func (u *UserStorageService) GetIDName(username string, email string) (string, e
 
 	var profileDB *models.Profile = new(models.Profile)
 
-	if err := u.db.Where("email = ?", email).First(&profileDB).Error; err != nil {
+	if err := u.db.Where(&models.Profile{Email: email}).First(&profileDB).Error; err != nil {
 		return "", err
 	}
 
@@ -73,15 +74,16 @@ func (u *UserStorageService) GetIDName(username string, email string) (string, e
 }
 
 //CheckExistingRelation Check if exits any relations before create
-func (u *UserStorageService) CheckExistingRelation(fromUser string, toUser string, active bool) (bool, error) {
+func (u *UserStorageService) CheckExistingRelation(fromUser string, toUsername string, active bool) (bool, error) {
 	//Check values
-	if len(fromUser) < 0 || len(toUser) < 0 {
+	if len(fromUser) < 0 || len(toUsername) < 0 {
 		return false, errors.New("Must send boths variables")
 	}
 
 	var relationDB *models.Relation = new(models.Relation)
 
-	err := u.db.Where(&models.Relation{FromName: fromUser, ToName: toUser}).Or(&models.Relation{FromName: toUser, ToName: fromUser, Mutual: true}).First(&relationDB).Error
+	err := u.db.Where(&models.Relation{FromName: fromUser, ToName: toUsername}).
+		Or(&models.Relation{FromName: toUsername, ToName: fromUser, Mutual: true}).First(&relationDB).Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -120,14 +122,16 @@ func (u *UserStorageService) CheckExistingRelation(fromUser string, toUser strin
 }
 
 //CheckMutualRelation Check if exits a relation and if is not mutual, If is not mutual update it
-func (u *UserStorageService) CheckMutualRelation(fromUser string, fromID string, toUser string) (bool, error) {
+func (u *UserStorageService) CheckMutualRelation(fromUser string, fromID string, toUsername string) (bool, error) {
 	//Check values
-	if len(fromUser) < 0 || len(toUser) < 0 {
+	if len(fromUser) < 0 || len(toUsername) < 0 {
 		return false, errors.New("Must send boths variables")
 	}
 
+	var relationDB *models.Relation = new(models.Relation)
+
 	//If the relations already exits with other user updated to mutual
-	err := u.db.Model(&models.Relation{}).Where(&models.Relation{FromName: toUser, ToName: fromUser, Mutual: false}).Update("mutual", true).Error
+	err := u.db.Where(&models.Relation{FromName: toUsername, ToName: fromUser, Mutual: false}).First(&relationDB).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, nil
@@ -136,27 +140,44 @@ func (u *UserStorageService) CheckMutualRelation(fromUser string, fromID string,
 		return true, err
 	}
 
-	go u.UpdateRelations(fromID)
+	if relationDB.Mutual == false {
+		err := u.db.Model(&models.Relation{}).
+			Where(&models.Relation{RelationID: relationDB.RelationID}).
+			Updates(map[string]interface{}{"mutual": true, "updated_at": time.Now()}).Error
+		if err != nil {
+			return false, err
+		}
 
-	succes, err := grpc.CreateMovement("Relations", "Update relation to mutual", "User Service")
+		if err := u.UpdateRelations(fromID); err != nil {
+			return true, err
+		}
 
-	if err != nil {
-		log.Println("Error in Create a movement: " + err.Error())
+		succes, err := grpc.CreateMovement("Relations", "Update relation to mutual", "User Service")
+
+		if err != nil {
+			log.Println("Error in Create a movement: " + err.Error())
+		}
+
+		if succes == false {
+			log.Println("Error in Create a movement")
+		}
+
+		toID, err := u.GetIDName(toUsername, "")
+
+		if err != nil {
+			log.Println(toUsername)
+			return false, err
+		}
+
+		if toID != "" {
+			u.UpdateRelations(toID)
+		}
+
+		return true, nil
 	}
 
-	if succes == false {
-		log.Println("Error in Create a movement")
+	if relationDB.FromName != "" && relationDB.FromName == fromUser {
+		return true, nil
 	}
-
-	toID, err := u.GetIDName(toUser, "")
-
-	if err != nil {
-		log.Println("Error in get the ID in cache " + err.Error())
-	}
-
-	if toID != "" {
-		u.UpdateRelations(toID)
-	}
-
-	return true, nil
+	return false, nil
 }

@@ -34,10 +34,10 @@ func CloseDB() {
 }
 
 //GetTransactions of User
-func (s *Server) GetTransactions(ctx context.Context, request *TransactionRequest) (*TransactionResponse, error) {
+func (s *Server) GetTransactions(ctx context.Context, request *GetTransactionRequest) (*LastTransactionsResponse, error) {
 	var response []*Transaction
 	if len(request.ID) < 0 || request.ID == "" {
-		return &TransactionResponse{Transactions: response}, errors.New("Must send a ID")
+		return &LastTransactionsResponse{Transactions: response}, errors.New("Must send a ID")
 	}
 
 	tsDB, err := GetTransactionsCache(request.ID)
@@ -46,7 +46,7 @@ func (s *Server) GetTransactions(ctx context.Context, request *TransactionReques
 		tsDB, err = GetTransactions(request.ID)
 
 		if err != nil {
-			return &TransactionResponse{Transactions: response}, err
+			return &LastTransactionsResponse{Transactions: response}, err
 		}
 	}
 
@@ -65,7 +65,7 @@ func (s *Server) GetTransactions(ctx context.Context, request *TransactionReques
 		response = append(response, &loopTS)
 	}
 
-	return &TransactionResponse{Transactions: response}, nil
+	return &LastTransactionsResponse{Transactions: response}, nil
 }
 
 //GetTransactionsCache Get transactions save in Cache

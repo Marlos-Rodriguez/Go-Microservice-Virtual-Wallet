@@ -236,7 +236,9 @@ func (s *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 				return false, err
 			}
 
-			go s.UpdateRelations(ID)
+			if err := s.UpdateRelations(ID); err != nil {
+				return false, err
+			}
 
 			success, err = grpc.CreateMovement("Relations", "Modify UserName in relations: "+currentUsername, "User Service")
 
@@ -367,7 +369,7 @@ func (s *UserStorageService) GetRelations(ID string, page int) ([]*models.Relati
 func (s *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error) {
 
 	//Check if exits a relation but is not mutual
-	exits, err := s.CheckMutualRelation(r.FromName, r.ToName, r.FromID)
+	exits, err := s.CheckMutualRelation(r.FromName, r.FromID, r.ToName)
 
 	//If there was an error but the relation exits
 	if err != nil && exits {
@@ -375,7 +377,8 @@ func (s *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error
 	}
 
 	//If the User exits and change the relation to mutual
-	if exits == true && err == nil {
+	if exits && err == nil {
+		log.Println("exits && err == nil")
 		return true, nil
 	}
 
@@ -445,12 +448,9 @@ func (s *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error
 	}
 
 	//Create relation in DB
-	if err := s.db.Create(&newRelation).Error; err != nil {
+	if err := s.db.Model(&models.Relation{}).Create(&newRelation).Error; err != nil {
 		return false, err
 	}
-
-	//Update Cache
-	go s.UpdateRelations(newRelation.FromUser.String())
 
 	//Create Movement
 	var change string = "Create a new Relation between " + newRelation.FromName + " & " + newRelation.ToName
@@ -491,8 +491,12 @@ func (s *UserStorageService) DeactivateRelation(relationID string, FromID string
 		return false, err
 	}
 
-	go s.UpdateRelations(relationDB.FromUser.String())
-	go s.UpdateRelations(relationDB.ToUser.String())
+	if err := s.UpdateRelations(relationDB.FromUser.String()); err != nil {
+		return false, err
+	}
+	if err := s.UpdateRelations(relationDB.ToUser.String()); err != nil {
+		return false, err
+	}
 
 	succes, err := grpc.CreateMovement("Relations", "Deactive Relation: "+relationDB.RelationID.String(), "User Service")
 

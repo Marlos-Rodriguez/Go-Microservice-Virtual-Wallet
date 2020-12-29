@@ -29,7 +29,7 @@ func closeTransactionClient() {
 
 //GetTransactions of user
 func GetTransactions(id string) ([]TSModels.TransactionResponse, bool, error) {
-	transactionsRequest := &TSserver.TransactionRequest{
+	transactionsRequest := &TSserver.GetTransactionRequest{
 		ID: id,
 	}
 

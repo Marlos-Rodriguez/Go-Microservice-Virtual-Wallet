@@ -5,14 +5,14 @@ option go_package = ".;server";
 package server;
 
 service TransactionService {
-    rpc GetTransactions (TransactionRequest) returns (TransactionResponse);
+    rpc GetTransactions (GetTransactionRequest) returns (LastTransactionsResponse);
 }
 
-message TransactionRequest {
+message GetTransactionRequest {
     string ID = 1;
 }
 
-message TransactionResponse {
+message LastTransactionsResponse {
     repeated Transaction transactions = 1;
 }
 

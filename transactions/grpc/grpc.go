@@ -1,10 +1,12 @@
-package server
+package grpc
 
 import (
 	"log"
 	"net"
 
 	"google.golang.org/grpc"
+
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/grpc/server"
 )
 
 //NewGRPCServer Create new gRPC server
@@ -14,14 +16,14 @@ func NewGRPCServer() {
 		log.Fatalf("Failed to listen on Port :9003 %v", err)
 	}
 
-	s := Server{}
+	s := server.Server{}
 
 	grpcServer := grpc.NewServer()
 
-	RegisterTransactionServiceServer(grpcServer, &s)
+	server.RegisterTransactionServiceServer(grpcServer, &s)
 
-	GetStorageService()
-	defer CloseDB()
+	server.GetStorageService()
+	defer server.CloseDB()
 
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve on Port :9001 %v", err)
