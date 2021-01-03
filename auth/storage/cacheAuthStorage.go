@@ -167,6 +167,4 @@ func (s *AuthStorageService) DeleteUserCache(ID string) {
 	if status.Err() != nil {
 		log.Println("Error in set in the cache " + status.Err().Error())
 	}
-
-	log.Println("User cache Updated")
 }

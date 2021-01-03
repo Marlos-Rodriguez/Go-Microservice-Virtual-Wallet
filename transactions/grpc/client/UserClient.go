@@ -14,7 +14,7 @@ var userConn *grpc.ClientConn
 
 //StartMoveClient Start the client for movement gRPC
 func startUserClient() {
-	userConn, err := grpc.Dial(":9000", grpc.WithInsecure())
+	userConn, err := grpc.Dial(":9001", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %s", err)
 	}

@@ -158,8 +158,6 @@ func (s *UserStorageService) UpdateUserCache(ID string) {
 	if status.Err() != nil {
 		log.Println("Error in set in the cache " + status.Err().Error())
 	}
-
-	log.Println("User cache Updated")
 }
 
 //SetRelationCache Set One page of 20 relations

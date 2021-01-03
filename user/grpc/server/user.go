@@ -108,7 +108,7 @@ func (s *Server) CheckUsersTransactions(ctx context.Context, request *CheckTrans
 		}, err
 	}
 
-	if fromUser.Balance < request.Amount {
+	if fromUser.Balance <= 0 || fromUser.Balance < request.Amount {
 		return &TransactionResponse{
 			Exits:   false,
 			Actives: false,
@@ -145,7 +145,7 @@ func (s *Server) MakeTransaction(ctx context.Context, request *TransactionReques
 		return &NewTransactionResponse{Sucess: false}, err
 	}
 
-	if fromUser.Balance < request.Amount {
+	if fromUser.Balance <= 0 || fromUser.Balance < request.Amount {
 		return &NewTransactionResponse{Sucess: false}, errors.New("User not have enough balance")
 	}
 
@@ -156,10 +156,10 @@ func (s *Server) MakeTransaction(ctx context.Context, request *TransactionReques
 	}
 
 	var fromUserDB *models.User = new(models.User)
-	fromUserDB.Balance -= float64(request.Amount)
+	fromUserDB.Balance = (fromUser.Balance - float64(request.Amount))
 
 	var toUserDB *models.User = new(models.User)
-	toUserDB.Balance += float64(request.Amount)
+	toUserDB.Balance = (toUser.Balance - float64(request.Amount))
 
 	if success, err := storageService.ModifyUser(fromUserDB, request.FromID, ""); !success || err != nil {
 		return &NewTransactionResponse{Sucess: false}, err
@@ -167,6 +167,9 @@ func (s *Server) MakeTransaction(ctx context.Context, request *TransactionReques
 	if success, err := storageService.ModifyUser(toUserDB, request.ToID, ""); !success || err != nil {
 		return &NewTransactionResponse{Sucess: false}, err
 	}
+
+	storageService.UpdateUserCache(fromUser.UserID.String())
+	storageService.UpdateUserCache(toUser.UserID.String())
 
 	return &NewTransactionResponse{Sucess: true}, nil
 }
