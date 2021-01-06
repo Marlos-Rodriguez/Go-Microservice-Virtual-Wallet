@@ -39,7 +39,7 @@ func (s *TransactionStorageService) CloseDB() {
 }
 
 //GetTransactions of User
-func (s *TransactionStorageService) GetTransactions(userID string, page int) ([]*models.TransactionResponse, error) {
+func (s *TransactionStorageService) GetTransactions(userID string, page int) ([]*models.TransactionWebResponse, error) {
 	if userID == "" || len(userID) <= 0 {
 		return nil, errors.New("Must send ID")
 	}
@@ -63,10 +63,10 @@ func (s *TransactionStorageService) GetTransactions(userID string, page int) ([]
 	}
 
 	//response
-	var transactionsResponse []*models.TransactionResponse
+	var transactionsResponse []*models.TransactionWebResponse
 
 	for _, transaction := range transactionsDB {
-		loopTransaction := models.TransactionResponse{
+		loopTransaction := models.TransactionWebResponse{
 			TsID:      transaction.TsID.String(),
 			FromUser:  transaction.FromUser.String(),
 			FromName:  transaction.FromName,
@@ -86,7 +86,7 @@ func (s *TransactionStorageService) GetTransactions(userID string, page int) ([]
 }
 
 //CreateTransaction between users
-func (s *TransactionStorageService) CreateTransaction(transaction models.TransactionRequest) (*models.TransactionResponse, bool, error) {
+func (s *TransactionStorageService) CreateTransaction(transaction models.TransactionWebRequest) (*models.TransactionWebResponse, bool, error) {
 
 	//Check For User Active & Amount
 	if success, err := grpcClient.CheckUserTransaction(
@@ -141,7 +141,7 @@ func (s *TransactionStorageService) CreateTransaction(transaction models.Transac
 	go s.UpdateTransactionCache(transaction.FromUser)
 	s.UpdateTransactionCache(transaction.ToUser)
 
-	TransactionResponse := models.TransactionResponse{
+	TransactionResponse := models.TransactionWebResponse{
 		TsID:      newTransaction.TsID.String(),
 		FromUser:  newTransaction.FromUser.String(),
 		FromName:  newTransaction.FromName,

@@ -10,8 +10,8 @@ import (
 )
 
 //NewRedisClient return a new redis client
-func NewRedisClient(service string) *redis.Client {
-	addr := environment.AccessENV(service + "_REDIS_ADDR")
+func NewRedisClient() *redis.Client {
+	addr := environment.AccessENV("REDIS_ADDR")
 
 	if addr == "" {
 		log.Fatalln("Error in Getting the ADDR from ENV")

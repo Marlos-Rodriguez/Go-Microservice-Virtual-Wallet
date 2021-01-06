@@ -18,7 +18,7 @@ var dbService *storage.MovementService
 
 //StartDB start the db for gRPC
 func StartDB() {
-	db := internalDB.ConnectDB("MOVE")
+	db := internalDB.ConnectDB()
 
 	if db == nil {
 		log.Fatalln("DB no conneted")

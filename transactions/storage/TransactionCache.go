@@ -13,10 +13,10 @@ import (
 )
 
 //SetTransactionCache Set transactions in Cache
-func (s *TransactionStorageService) SetTransactionCache(id string, transactions []*models.TransactionResponse) {
+func (s *TransactionStorageService) SetTransactionCache(id string, transactions []*models.TransactionWebResponse) {
 	transactionsCache, _ := json.Marshal(transactions)
 
-	var key string = "Transactions:" + id
+	var key string = "transactions:" + id
 
 	status := s.rdb.Set(context.Background(), key, transactionsCache, time.Hour*72)
 
@@ -26,7 +26,7 @@ func (s *TransactionStorageService) SetTransactionCache(id string, transactions 
 }
 
 //GetTransactionsCache Get transactions save in Cache
-func (s *TransactionStorageService) GetTransactionsCache(id string) ([]*models.TransactionResponse, error) {
+func (s *TransactionStorageService) GetTransactionsCache(id string) ([]*models.TransactionWebResponse, error) {
 	//Get info from redis
 	val := s.rdb.Get(context.Background(), "Transactions:"+id)
 
@@ -37,7 +37,7 @@ func (s *TransactionStorageService) GetTransactionsCache(id string) ([]*models.T
 		return nil, err
 	}
 
-	var transactionsCache []*models.TransactionResponse
+	var transactionsCache []*models.TransactionWebResponse
 
 	if err != redis.Nil {
 		transactionsBytes, err := val.Bytes()
@@ -64,10 +64,10 @@ func (s *TransactionStorageService) UpdateTransactionCache(id string) {
 		log.Println("Error in Update transaction Cache " + err.Error())
 	}
 
-	var transactionsResponse []*models.TransactionResponse
+	var transactionsResponse []*models.TransactionWebResponse
 
 	for _, transaction := range transactionsDB {
-		loopTransaction := models.TransactionResponse{
+		loopTransaction := models.TransactionWebResponse{
 			TsID:      transaction.TsID.String(),
 			FromUser:  transaction.FromUser.String(),
 			FromName:  transaction.FromName,

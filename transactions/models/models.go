@@ -20,8 +20,8 @@ type Transaction struct {
 	IsActive  bool      `gorm:"not null;default:false"`
 }
 
-//TransactionResponse struct
-type TransactionResponse struct {
+//TransactionWebResponse struct
+type TransactionWebResponse struct {
 	TsID      string  `json:"tsID"`
 	FromUser  string  `json:"fromId"`
 	FromName  string  `json:"fromName"`
@@ -32,8 +32,8 @@ type TransactionResponse struct {
 	CreatedAt string  `json:"createAt"`
 }
 
-//TransactionRequest struct
-type TransactionRequest struct {
+//TransactionWebRequest struct
+type TransactionWebRequest struct {
 	FromUser string  `json:"fromId"`
 	FromName string  `json:"fromName"`
 	Password string  `json:"password"`

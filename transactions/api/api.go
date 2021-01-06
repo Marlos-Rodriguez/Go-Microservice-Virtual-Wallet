@@ -12,12 +12,12 @@ import (
 func Start() {
 	var DB *gorm.DB
 
-	DB = storage.ConnectDB("TS")
+	DB = storage.ConnectDB()
 	defer DB.Close()
 
 	var RDB *redis.Client
 
-	RDB = cache.NewRedisClient("TS")
+	RDB = cache.NewRedisClient()
 	defer RDB.Close()
 
 	app := routes(DB, RDB)

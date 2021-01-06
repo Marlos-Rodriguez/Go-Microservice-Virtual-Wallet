@@ -71,7 +71,7 @@ func (s *TransactionsHandlerService) GetTransactions(c *fiber.Ctx) error {
 
 //CreateTransaction between Users
 func (s *TransactionsHandlerService) CreateTransaction(c *fiber.Ctx) error {
-	var newTransaction *models.TransactionRequest
+	var newTransaction *models.TransactionWebRequest
 
 	if err := c.BodyParser(&newTransaction); err != nil {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Review your body", "data": err.Error()})

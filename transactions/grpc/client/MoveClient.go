@@ -34,7 +34,7 @@ func CreateMovement(relation string, change string, origin string) (bool, error)
 		Origin:   origin,
 	}
 
-	response, err := models.CreateMovement(context.Background(), newMovement)
+	response, err := moveClient.CreateMovement(context.Background(), newMovement)
 
 	if err != nil {
 		return false, err
