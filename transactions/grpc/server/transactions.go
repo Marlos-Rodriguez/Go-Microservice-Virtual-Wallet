@@ -8,8 +8,8 @@ import (
 	"github.com/go-redis/redis/v8"
 	"golang.org/x/net/context"
 
-	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/cache"
-	internal "github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/storage"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/internal/cache"
+	internal "github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/internal/storage"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/models"
 	"github.com/jinzhu/gorm"
 )

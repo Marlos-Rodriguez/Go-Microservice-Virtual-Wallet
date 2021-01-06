@@ -5,11 +5,11 @@ import (
 	"errors"
 	"log"
 
-	userGRPC "github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/grpc/server"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/models"
 	"google.golang.org/grpc"
 )
 
-var userClient userGRPC.UserServiceClient
+var userClient models.UserServiceClient
 var userConn *grpc.ClientConn
 
 //StartMoveClient Start the client for movement gRPC
@@ -19,7 +19,7 @@ func startUserClient() {
 		log.Fatalf("did not connect: %s", err)
 	}
 
-	userClient = userGRPC.NewUserServiceClient(userConn)
+	userClient = models.NewUserServiceClient(userConn)
 }
 
 //CloseMoveClient Close the client for movement gRPC
@@ -29,7 +29,7 @@ func closeUserClient() {
 
 //CheckUserTransaction Create a new movement in DB
 func CheckUserTransaction(fromID string, toID string, amount float32, password string) (bool, error) {
-	newTransaction := &userGRPC.CheckTransactionRequest{
+	newTransaction := &models.CheckTransactionRequest{
 		FromID:   fromID,
 		ToID:     toID,
 		Amount:   float64(amount),
@@ -51,7 +51,7 @@ func CheckUserTransaction(fromID string, toID string, amount float32, password s
 
 //MakeTransaction Between Users
 func MakeTransaction(fromID string, toID string, amount float32) (bool, error) {
-	newTransaction := &userGRPC.TransactionRequest{
+	newTransaction := &models.TransactionRequest{
 		FromID: fromID,
 		ToID:   toID,
 		Amount: float64(amount),

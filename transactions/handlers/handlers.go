@@ -12,7 +12,7 @@ import (
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/models"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/storage"
 
-	internalJWT "github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/jwt"
+	internalJWT "github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/internal/jwt"
 )
 
 //TransactionsHandlerService struct

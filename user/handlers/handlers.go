@@ -13,7 +13,7 @@ import (
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/storage"
 
-	internalJWT "github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/jwt"
+	internalJWT "github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/internal/jwt"
 )
 
 //UserhandlerService struct

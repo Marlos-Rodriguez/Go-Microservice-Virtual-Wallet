@@ -7,10 +7,9 @@ import (
 	jwt "github.com/form3tech-oss/jwt-go"
 	"github.com/gofiber/fiber/v2"
 
+	internalJWT "github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/internal/jwt"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/models"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/storage"
-	internalJWT "github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/jwt"
-	UserModels "github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 	"github.com/go-redis/redis/v8"
 	"github.com/jinzhu/gorm"
 )
@@ -36,7 +35,7 @@ func (s *AuthHandlerService) Register(c *fiber.Ctx) error {
 
 	/* Check all the Values */
 
-	var userDB UserModels.User
+	var userDB models.User
 
 	/* Essential */
 

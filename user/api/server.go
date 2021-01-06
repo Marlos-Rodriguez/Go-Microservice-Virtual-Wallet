@@ -3,7 +3,7 @@ package api
 import (
 	"log"
 
-	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/environment"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/internal/environment"
 	"github.com/gofiber/fiber/v2"
 )
 

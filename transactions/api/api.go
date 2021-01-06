@@ -4,8 +4,8 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/jinzhu/gorm"
 
-	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/cache"
-	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/storage"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/internal/cache"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/internal/storage"
 )
 
 //Start Start a new User server API

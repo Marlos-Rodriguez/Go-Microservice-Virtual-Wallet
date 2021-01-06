@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	internalDB "github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/storage"
+	internalDB "github.com/Marlos-Rodriguez/go-postgres-wallet-back/movements/internal/storage"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/movements/models"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/movements/storage"
 	"github.com/google/uuid"

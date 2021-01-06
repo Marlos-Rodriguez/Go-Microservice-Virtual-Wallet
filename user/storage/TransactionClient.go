@@ -4,12 +4,11 @@ import (
 	"context"
 	"log"
 
-	TSserver "github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/grpc/server"
-	TSModels "github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/models"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 	"google.golang.org/grpc"
 )
 
-var tsClient TSserver.TransactionServiceClient
+var tsClient models.TransactionServiceClient
 var tsConn *grpc.ClientConn
 
 //StartMoveClient Start the client for movement gRPC
@@ -19,7 +18,7 @@ func startTransactionClient() {
 		log.Fatalf("did not connect: %s", err)
 	}
 
-	tsClient = TSserver.NewTransactionServiceClient(moveConn)
+	tsClient = models.NewTransactionServiceClient(moveConn)
 }
 
 //CloseMoveClient Close the client for movement gRPC
@@ -28,21 +27,21 @@ func closeTransactionClient() {
 }
 
 //GetTransactions of user
-func GetTransactions(id string) ([]TSModels.TransactionResponse, bool, error) {
-	transactionsRequest := &TSserver.GetTransactionRequest{
+func GetTransactions(id string) ([]models.TransactionResponse, bool, error) {
+	transactionsRequest := &models.GetTransactionRequest{
 		ID: id,
 	}
 
 	response, err := tsClient.GetTransactions(context.Background(), transactionsRequest)
 
-	var transactions []TSModels.TransactionResponse
+	var transactions []models.TransactionResponse
 
 	if err != nil {
 		return transactions, false, err
 	}
 
 	for _, ts := range response.Transactions {
-		loopTS := &TSModels.TransactionResponse{
+		loopTS := &models.TransactionResponse{
 			TsID:      ts.TsID,
 			FromUser:  ts.FromID,
 			FromName:  ts.FromName,

@@ -10,8 +10,8 @@ import (
 	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/utils"
 	grpc "github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/grpc/client"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/internal/utils"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 )
 

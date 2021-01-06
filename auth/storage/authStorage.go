@@ -11,9 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	grpcClient "github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/grpc/client"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/internal/utils"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/models"
-	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/utils"
-	UserModels "github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 )
 
 //AuthStorageService struct
@@ -26,7 +25,7 @@ type AuthStorageService struct {
 func NewAuthStorageService(DB *gorm.DB, RDB *redis.Client) *AuthStorageService {
 	go grpcClient.StartClient()
 
-	DB.AutoMigrate(&UserModels.User{}, &UserModels.Profile{})
+	DB.AutoMigrate(&models.User{}, &models.Profile{})
 
 	return &AuthStorageService{db: DB, rdb: RDB}
 }
@@ -39,7 +38,7 @@ func (s *AuthStorageService) CloseDB() {
 }
 
 //Register Create a new User
-func (s *AuthStorageService) Register(newUser *UserModels.User) (bool, error) {
+func (s *AuthStorageService) Register(newUser *models.User) (bool, error) {
 	//Check if username & email exits
 	_, exits, err := s.CheckExistingUser(newUser.UserName, newUser.Profile.Email)
 
@@ -149,7 +148,7 @@ func (s *AuthStorageService) Login(user *models.LoginRequest) (*models.JWTLogin,
 	}
 
 	/*Login with DB */
-	var profileDB *UserModels.Profile = new(UserModels.Profile)
+	var profileDB *models.Profile = new(models.Profile)
 
 	if err := s.db.Where("user_id = ? AND email = ?", ID, user.Email).First(&profileDB).Error; err != nil {
 		return nil, false, err
@@ -197,7 +196,7 @@ func (s *AuthStorageService) ReactivateUser(user *models.LoginRequest) (bool, er
 	}
 
 	//Get info from DB
-	var profileDB *UserModels.Profile = new(UserModels.Profile)
+	var profileDB *models.Profile = new(models.Profile)
 
 	if err := s.db.Where("user_id = ?", ID).Or("email = ?", user.Email).First(&profileDB).Error; err != nil {
 		return false, err
@@ -213,10 +212,10 @@ func (s *AuthStorageService) ReactivateUser(user *models.LoginRequest) (bool, er
 	}
 
 	//Update in DB
-	go s.db.Model(&UserModels.User{}).Where(&UserModels.User{UserID: profileDB.UserID, UserName: user.Username}).
-		Update(&UserModels.User{IsActive: true, UpdatedAt: time.Now()})
-	s.db.Model(&UserModels.Profile{}).Where(&UserModels.Profile{UserID: profileDB.UserID, Email: user.Email}).
-		Update(&UserModels.Profile{IsActive: true, UpdatedAt: time.Now()})
+	go s.db.Model(&models.User{}).Where(&models.User{UserID: profileDB.UserID, UserName: user.Username}).
+		Update(&models.User{IsActive: true, UpdatedAt: time.Now()})
+	s.db.Model(&models.Profile{}).Where(&models.Profile{UserID: profileDB.UserID, Email: user.Email}).
+		Update(&models.Profile{IsActive: true, UpdatedAt: time.Now()})
 
 	if s.db.Error != nil {
 		return false, s.db.Error
@@ -249,9 +248,9 @@ func (s *AuthStorageService) DeactivateUser(user models.DeactivateUserRequest) (
 			return false, err
 		}
 
-		go s.db.Model(&UserModels.User{}).Where(&UserModels.User{UserID: profileCache.UserID, UserName: user.Username}).
+		go s.db.Model(&models.User{}).Where(&models.User{UserID: profileCache.UserID, UserName: user.Username}).
 			Updates(map[string]interface{}{"is_active": false, "updated_at": time.Now()})
-		s.db.Model(&UserModels.Profile{}).Where(&UserModels.Profile{UserID: profileCache.UserID, Email: user.Email}).
+		s.db.Model(&models.Profile{}).Where(&models.Profile{UserID: profileCache.UserID, Email: user.Email}).
 			Updates(map[string]interface{}{"is_active": false, "updated_at": time.Now()})
 
 		if s.db.Error != nil {
@@ -273,9 +272,9 @@ func (s *AuthStorageService) DeactivateUser(user models.DeactivateUserRequest) (
 		return true, nil
 	}
 
-	var profileDB *UserModels.Profile = new(UserModels.Profile)
+	var profileDB *models.Profile = new(models.Profile)
 
-	if err := s.db.Where(&UserModels.User{UserID: profileCache.UserID}).First(&profileDB).Error; err != nil {
+	if err := s.db.Where(&models.User{UserID: profileCache.UserID}).First(&profileDB).Error; err != nil {
 		return false, err
 	}
 
@@ -288,9 +287,9 @@ func (s *AuthStorageService) DeactivateUser(user models.DeactivateUserRequest) (
 		return false, err
 	}
 
-	go s.db.Model(&UserModels.User{}).Where(&UserModels.User{UserID: profileDB.UserID, UserName: user.Username}).
+	go s.db.Model(&models.User{}).Where(&models.User{UserID: profileDB.UserID, UserName: user.Username}).
 		Updates(map[string]interface{}{"is_active": false, "updated_at": time.Now()})
-	s.db.Model(&UserModels.Profile{}).Where(&UserModels.Profile{UserID: profileDB.UserID, Email: user.Email}).
+	s.db.Model(&models.Profile{}).Where(&models.Profile{UserID: profileDB.UserID, Email: user.Email}).
 		Updates(map[string]interface{}{"is_active": false, "updated_at": time.Now()})
 
 	if s.db.Error != nil {

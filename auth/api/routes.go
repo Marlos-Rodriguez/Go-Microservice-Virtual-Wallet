@@ -7,7 +7,7 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/handlers"
-	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/middlewares"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/internal/middlewares"
 )
 
 func routes(DB *gorm.DB, RDB *redis.Client) *fiber.App {

@@ -6,9 +6,9 @@ import (
 	"github.com/go-redis/redis/v8"
 	"golang.org/x/net/context"
 
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/internal/cache"
+	internal "github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/internal/storage"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/storage"
-	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/cache"
-	internal "github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/storage"
 	"github.com/jinzhu/gorm"
 )
 
@@ -20,8 +20,8 @@ var storageService *storage.AuthStorageService
 
 //GetStorageService Start the storage service for GPRC server
 func GetStorageService() {
-	var DB *gorm.DB = internal.ConnectDB("USER")
-	var RDB *redis.Client = cache.NewRedisClient("USER")
+	var DB *gorm.DB = internal.ConnectDB()
+	var RDB *redis.Client = cache.NewRedisClient()
 
 	storageService = storage.NewAuthStorageService(DB, RDB)
 }

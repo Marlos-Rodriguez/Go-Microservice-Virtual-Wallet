@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/models"
 	"github.com/go-redis/redis/v8"
 	"golang.org/x/net/context"
 )

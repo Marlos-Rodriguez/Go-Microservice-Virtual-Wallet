@@ -4,11 +4,11 @@ import (
 	"context"
 	"log"
 
-	auth "github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/grpc/server"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 	"google.golang.org/grpc"
 )
 
-var authClient auth.AuthServiceClient
+var authClient models.AuthServiceClient
 var authConn *grpc.ClientConn
 
 //StartAuthClient Start the client for Auth gRPC
@@ -18,7 +18,7 @@ func startAuthClient() {
 		log.Fatalf("did not connect: %s", err)
 	}
 
-	authClient = auth.NewAuthServiceClient(authConn)
+	authClient = models.NewAuthServiceClient(authConn)
 }
 
 //CloseAuthClient Close the client for movement gRPC
@@ -28,7 +28,7 @@ func closeAuthClient() {
 
 //UpdateAuthCache Update the User username or email
 func UpdateAuthCache(oldUsername string, newUsername string, oldEmail string, newEmail string) (bool, error) {
-	User := &auth.NewUserInfo{
+	User := &models.NewUserInfo{
 		OldUsername: oldUsername,
 		NewUsername: newUsername,
 		OldEmail:    oldEmail,

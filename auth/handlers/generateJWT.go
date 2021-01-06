@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/internal/environment"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/auth/models"
-	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/environment"
 	jwt "github.com/form3tech-oss/jwt-go"
 )
 

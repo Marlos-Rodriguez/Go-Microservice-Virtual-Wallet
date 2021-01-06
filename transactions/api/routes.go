@@ -6,8 +6,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/jinzhu/gorm"
 
-	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/middlewares"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/handlers"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/transactions/internal/middlewares"
 )
 
 func routes(DB *gorm.DB, RDB *redis.Client) *fiber.App {

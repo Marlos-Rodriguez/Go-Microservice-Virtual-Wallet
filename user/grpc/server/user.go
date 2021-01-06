@@ -4,13 +4,13 @@ import (
 	"errors"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 
-	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/cache"
-	internal "github.com/Marlos-Rodriguez/go-postgres-wallet-back/internal/storage"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/internal/cache"
+	internal "github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/internal/storage"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/storage"
-	"github.com/jinzhu/gorm"
 )
 
 //Server User Server struct
@@ -21,8 +21,8 @@ var storageService storage.UserStorageService
 
 //GetStorageService Start the storage service for GPRC server
 func GetStorageService() {
-	var DB *gorm.DB = internal.ConnectDB("USER")
-	var RDB *redis.Client = cache.NewRedisClient("USER")
+	var DB *gorm.DB = internal.ConnectDB()
+	var RDB *redis.Client = cache.NewRedisClient()
 
 	storageService = storage.NewUserStorageService(DB, RDB)
 }
