@@ -4,6 +4,7 @@ services:
   #User DB
   user-service-db:
     image: postgres
+    container_name: user-db
     environment:
       - POSTGRES_DB=virtualwallet
       - POSTGRES_USER=postgres
@@ -13,59 +14,55 @@ services:
     expose:
       - 5432
     networks:
-      - fullstack-wallet
+      - fullstack-wallet-user
   #Movements DB
   movements-service-db:
     image: postgres
+    container_name: movements-db
     environment:
       - POSTGRES_DB=movements
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=mysecretpassword
     ports:
-      - 5433:5433
+      - 5433:5432
     expose:
       - 5433
     networks:
-      - fullstack-wallet
+      - fullstack-wallet-movements
   #User Redis
   user-service-redis:
     image: redis
+    container_name: transaction-redis
     ports:
       - 6379:6379
     networks:
-      - fullstack-wallet
-  #Auth Redis
-  auth-service-redis:
-    image: redis
-    ports:
-      - 6378:6378
-    networks:
-      - fullstack-wallet
+      - fullstack-wallet-user
   #Transaction DB
   transaction-service-db:
     image: postgres
+    container_name: transaction-db
     environment:
       - POSTGRES_DB=virtualwallet
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=mysecretpassword
     ports:
-      - 5434:5434
-    expose:
-      - 5434
+      - 5434:5432
     networks:
-      - fullstack-wallet
+      - fullstack-wallet-transaction
   #transaction Redis
   transaction-service-redis:
     image: redis
+    container_name: transactions-redis-client
     ports:
       - 6377:6377
     networks:
-      - fullstack-wallet
+      - fullstack-wallet-transaction
   ################################################################
   #Services
   #Movements Service
   movements-service:
     build: "./movements"
+    container_name: movements-service
     depends_on:
       - movements-service-db
     links:
@@ -76,15 +73,15 @@ services:
       - DB_HOST=movements-service-db
       - DB_USER=postgres
       - DB_PASSWORD=mysecretpassword
-      - DB_NAME=virtualwallet
-      - DB_PORT=5433
+      - DB_NAME=movements
+      - DB_PORT=5432
     networks:
-      - fullstack-wallet
-    volumes:
-      - ./movements:/apps/service
+      - fullstack-wallet-movements
+      - fullstack-wallet-services
   #User Service
   user-service:
     build: "./user"
+    container_name: user-service
     depends_on:
       - user-service-db
       - user-service-redis
@@ -102,20 +99,24 @@ services:
       - DB_PORT=5432
       - REDIS_ADDR=user-service-redis:6379
       - SECRECT_KEY=I_Want_To_Create_An_Amazing_Game_That_Maria_loves
+      - MOVEMENT_GRPC=movements-service:9000
+      - AUTH_GRPC=auth-service:9002
+      - TRANSACTION_GRPC=transaction-service:9003
     networks:
-      - fullstack-wallet
-    volumes:
-      - ./user:/apps/service
+      - fullstack-wallet-services
+      - fullstack-wallet-user
   #Auth Service
   auth-service:
     build: "./auth"
+    container_name: auth-service
     depends_on:
       - user-service-db
-      - auth-service-redis
+      - user-service-redis
       - movements-service
     links:
       - user-service
       - movements-service
+      - user-service-redis
     ports:
       - 3001:3001
     environment:
@@ -124,15 +125,16 @@ services:
       - DB_PASSWORD=mysecretpassword
       - DB_NAME=virtualwallet
       - DB_PORT=5432
-      - REDIS_ADDR=auth-service-redis:6378
+      - REDIS_ADDR=user-service-redis:6379
       - SECRECT_KEY=I_Want_To_Create_An_Amazing_Game_That_Maria_loves
+      - MOVEMENT_GRPC=movements-service:9000
     networks:
-      - fullstack-wallet
-    volumes:
-      - ./auth:/apps/service
+      - fullstack-wallet-services
+      - fullstack-wallet-user
   #transaction Service
   transaction-service:
     build: "./transactions"
+    container_name: transaction-service
     depends_on:
       - transaction-service-db
       - transaction-service-redis
@@ -150,12 +152,30 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=mysecretpassword
       - DB_NAME=virtualwallet
-      - DB_PORT=5433
-      - REDIS_ADDR=transaction-service-redis:6377
+      - DB_PORT=5432
+      - REDIS_ADDR=transaction-service-redis:6379
       - SECRECT_KEY=I_Want_To_Create_An_Amazing_Game_That_Maria_loves
+      - MOVEMENT_GRPC=movements-service:9000
+      - USER_GRPC=user-service:9001
     networks:
-      - fullstack-wallet
+      - fullstack-wallet-services
+      - fullstack-wallet-transaction
+  webserver:
+    image: nginx:latest
+    container_name: webserver
     volumes:
-      - ./transactions:/apps/service
+      - ./nginx/default.conf:/etc/nginx/sites-available/default.conf
+    depends_on:
+      - user-service
+      - movements-service
+      - auth-service
+      - transaction-service
+    ports:
+      - 8000:80
+    networks:
+      - fullstack-wallet-services
 networks:
-  fullstack-wallet:
+  fullstack-wallet-services:
+  fullstack-wallet-movements:
+  fullstack-wallet-user:
+  fullstack-wallet-transaction:

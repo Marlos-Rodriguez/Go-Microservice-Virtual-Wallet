@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/internal/environment"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 	"google.golang.org/grpc"
 )
@@ -13,7 +14,12 @@ var tsConn *grpc.ClientConn
 
 //StartMoveClient Start the client for movement gRPC
 func startTransactionClient() {
-	moveConn, err := grpc.Dial(":9003", grpc.WithInsecure())
+	urlTarget := environment.AccessENV("TRANSACTION_GRPC")
+
+	if urlTarget == "" {
+		log.Fatalln("Error in Access to TRANSACTION_GRPC URL in User Service")
+	}
+	moveConn, err := grpc.Dial(urlTarget, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %s", err)
 	}

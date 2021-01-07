@@ -36,11 +36,13 @@ func ConnectDB() *gorm.DB {
 	//Connect to DB
 	var DB *gorm.DB
 
+	log.Printf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, portInt, user, password, name)
+
 	DB, err = gorm.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, portInt, user, password, name))
 
 	//Check for Errors in DB
 	if err != nil {
-		log.Fatalf("Error in connect the DB %e", err)
+		log.Fatalf("Error in connect the DB %v", err)
 		return nil
 	}
 

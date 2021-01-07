@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/internal/environment"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/user/models"
 	"google.golang.org/grpc"
 )
@@ -13,7 +14,12 @@ var authConn *grpc.ClientConn
 
 //StartAuthClient Start the client for Auth gRPC
 func startAuthClient() {
-	authConn, err := grpc.Dial(":9002", grpc.WithInsecure())
+	urlTarget := environment.AccessENV("AUTH_GRPC")
+
+	if urlTarget == "" {
+		log.Fatalln("Error in Access to GRPC URL in User Service")
+	}
+	authConn, err := grpc.Dial(urlTarget, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %s", err)
 	}
