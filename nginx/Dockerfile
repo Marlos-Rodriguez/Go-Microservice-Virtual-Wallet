@@ -1,5 +1,8 @@
 FROM nginx:latest
 
-COPY ./default.conf /etc/nginx/sites-available/default.conf
+RUN apt-get update
+RUN apt-get install sudo
+RUN sudo apt-get install nano
 
-COPY ./wallet.conf /etc/nginx/conf.d/wallet.conf
+COPY ./nginx.conf /etc/nginx/sites-available/nginx.conf
+COPY ./nginx.conf /etc/nginx/conf.d/nginx.conf

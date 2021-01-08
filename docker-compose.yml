@@ -69,12 +69,8 @@ services:
       - movements-service-db
     ports:
       - 9000:9000
-    environment:
-      - DB_HOST=movements-service-db
-      - DB_USER=postgres
-      - DB_PASSWORD=mysecretpassword
-      - DB_NAME=movements
-      - DB_PORT=5432
+    env_file:
+      - ./internal/movement.env
     networks:
       - fullstack-wallet-movements
       - fullstack-wallet-services
@@ -91,17 +87,8 @@ services:
       - user-service-redis
     ports:
       - 3000:3000
-    environment:
-      - DB_HOST=user-service-db
-      - DB_USER=postgres
-      - DB_PASSWORD=mysecretpassword
-      - DB_NAME=virtualwallet
-      - DB_PORT=5432
-      - REDIS_ADDR=user-service-redis:6379
-      - SECRECT_KEY=I_Want_To_Create_An_Amazing_Game_That_Maria_loves
-      - MOVEMENT_GRPC=movements-service:9000
-      - AUTH_GRPC=auth-service:9002
-      - TRANSACTION_GRPC=transaction-service:9003
+    env_file:
+      - ./internal/user.env
     networks:
       - fullstack-wallet-services
       - fullstack-wallet-user
@@ -119,15 +106,8 @@ services:
       - user-service-redis
     ports:
       - 3001:3001
-    environment:
-      - DB_HOST=user-service-db
-      - DB_USER=postgres
-      - DB_PASSWORD=mysecretpassword
-      - DB_NAME=virtualwallet
-      - DB_PORT=5432
-      - REDIS_ADDR=user-service-redis:6379
-      - SECRECT_KEY=I_Want_To_Create_An_Amazing_Game_That_Maria_loves
-      - MOVEMENT_GRPC=movements-service:9000
+    env_file:
+      - ./internal/auth.env
     networks:
       - fullstack-wallet-services
       - fullstack-wallet-user
@@ -147,16 +127,8 @@ services:
       - movements-service
     ports:
       - 3002:3002
-    environment:
-      - DB_HOST=transaction-service-db
-      - DB_USER=postgres
-      - DB_PASSWORD=mysecretpassword
-      - DB_NAME=virtualwallet
-      - DB_PORT=5432
-      - REDIS_ADDR=transaction-service-redis:6379
-      - SECRECT_KEY=I_Want_To_Create_An_Amazing_Game_That_Maria_loves
-      - MOVEMENT_GRPC=movements-service:9000
-      - USER_GRPC=user-service:9001
+    env_file:
+      - ./internal/transaction.env
     networks:
       - fullstack-wallet-services
       - fullstack-wallet-transaction
