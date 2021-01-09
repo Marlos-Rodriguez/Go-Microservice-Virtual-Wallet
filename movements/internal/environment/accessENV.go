@@ -15,13 +15,13 @@ var (
 
 //AccessENV Return the ENV if exits
 func AccessENV(key string) string {
-	environmentMutex.Lock()
+	environmentMutex.RLock()
 	if environment[key] != "" {
 		val := environment[key]
-		environmentMutex.Unlock()
+		environmentMutex.RUnlock()
 		return val
 	}
-	environmentMutex.Unlock()
+	environmentMutex.RUnlock()
 
 	val := os.Getenv(key)
 
