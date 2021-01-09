@@ -17,7 +17,9 @@ var (
 func AccessENV(key string) string {
 	environmentMutex.Lock()
 	if environment[key] != "" {
-		return environment[key]
+		val := environment[key]
+		environmentMutex.Unlock()
+		return val
 	}
 	environmentMutex.Unlock()
 
