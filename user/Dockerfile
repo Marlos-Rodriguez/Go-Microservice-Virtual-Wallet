@@ -1,4 +1,4 @@
-FROM golang:latest
+FROM golang:alpine as builder
 
 ENV GO111MODULE=on
 
@@ -15,6 +15,12 @@ COPY . .
 ENV USER_PORT 3000
 
 RUN go build cmd/main.go
+
+FROM alpine:latest
+
+WORKDIR /root/
+
+COPY --from=builder /apps/service .
 
 EXPOSE 3000
 
