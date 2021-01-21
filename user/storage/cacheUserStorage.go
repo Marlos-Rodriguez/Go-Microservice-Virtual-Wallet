@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -124,8 +125,19 @@ func (s *UserStorageService) UpdateUserCache(ID string) {
 	var userDB *models.User = new(models.User)
 	var profileDB *models.Profile = new(models.Profile)
 
-	go s.db.Where("user_id = ?", &ID).First(&userDB)
-	s.db.Where("user_id = ?", ID).First(&profileDB)
+	var wg sync.WaitGroup
+
+	wg.Add(2)
+	go func() {
+		s.db.Where("user_id = ?", &ID).First(&userDB)
+		wg.Done()
+	}()
+	go func() {
+		s.db.Where("user_id = ?", ID).First(&profileDB)
+		wg.Done()
+	}()
+
+	wg.Wait()
 
 	err := s.db.Error
 
@@ -133,31 +145,36 @@ func (s *UserStorageService) UpdateUserCache(ID string) {
 		log.Fatalln("Error in get the info from DB for cache " + err.Error())
 	}
 
-	//Convert to save
-	redisUser, err := json.Marshal(userDB)
+	wg.Add(2)
+	go func() {
+		//Convert to save
+		redisUser, err := json.Marshal(userDB)
 
-	if err != nil {
-		log.Println("Error in Marshal the user" + err.Error())
-	}
+		if err != nil {
+			log.Println("Error in Marshal the user" + err.Error())
+		}
+		//Save in redis
+		status := s.rdb.Set(context.Background(), "User:"+userDB.UserID.String(), redisUser, time.Hour*72)
 
-	redisProfile, err := json.Marshal(profileDB)
+		if status.Err() != nil {
+			log.Println("Error in set in the cache " + status.Err().Error())
+		}
+	}()
+	go func() {
+		redisProfile, err := json.Marshal(profileDB)
 
-	if err != nil {
-		log.Println("Error in Marshal the user" + err.Error())
-	}
+		if err != nil {
+			log.Println("Error in Marshal the user" + err.Error())
+		}
 
-	//Save in redis
-	status := s.rdb.Set(context.Background(), "User:"+userDB.UserID.String(), redisUser, time.Hour*72)
+		status := s.rdb.Set(context.Background(), "Profile:"+profileDB.UserID.String(), redisProfile, time.Hour*72)
 
-	if status.Err() != nil {
-		log.Println("Error in set in the cache " + status.Err().Error())
-	}
+		if status.Err() != nil {
+			log.Println("Error in set in the cache " + status.Err().Error())
+		}
+	}()
 
-	status = s.rdb.Set(context.Background(), "Profile:"+profileDB.UserID.String(), redisProfile, time.Hour*72)
-
-	if status.Err() != nil {
-		log.Println("Error in set in the cache " + status.Err().Error())
-	}
+	wg.Wait()
 }
 
 //SetRelationCache Set One page of 20 relations

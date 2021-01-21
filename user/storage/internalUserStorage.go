@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -100,9 +101,20 @@ func (u *UserStorageService) CheckExistingRelation(fromUser string, toUsername s
 			return false, err
 		}
 
+		var wg sync.WaitGroup
+
 		//Update the Cache
-		go u.UpdateRelations(relationDB.FromUser.String())
-		go u.UpdateRelations(relationDB.ToUser.String())
+		wg.Add(2)
+		go func() {
+			u.UpdateRelations(relationDB.FromUser.String())
+			wg.Done()
+		}()
+		go func() {
+			u.UpdateRelations(relationDB.ToUser.String())
+			wg.Done()
+		}()
+
+		wg.Wait()
 
 		//Create the movement
 		succes, err := grpc.CreateMovement("Relations", "Update relation to mutual", "User Service")

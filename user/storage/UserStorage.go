@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -152,32 +153,50 @@ func (s *UserStorageService) ModifyUser(m *models.User, ID string, newUsername s
 
 	m.UpdatedAt = time.Now()
 
+	var wg sync.WaitGroup
+
+	var err error = nil
+
 	//Modify User in DB
-	go s.db.Model(&models.User{}).Where("user_id = ?", ID).Update(&m)
-
-	if err := s.db.Error; err != nil {
-		return false, err
-	}
-
+	wg.Add(2)
+	go func() {
+		err = s.db.Model(&models.User{}).Where("user_id = ?", ID).Update(&m).Error
+		wg.Done()
+	}()
 	//Modify in Profile DB
-	if err := s.db.Model(&models.Profile{}).Where("user_id = ?", ID).Update(&m.Profile).Error; err != nil {
-		return false, err
-	}
+	go func() {
+		err = s.db.Model(&models.Profile{}).Where("user_id = ?", ID).Update(&m.Profile).Error
+		wg.Done()
+	}()
 
-	//Make movement
-	change += "Modify user " + m.UserID.String()
-
-	succes, err := grpc.CreateMovement("User & Profile", change, "User Service")
+	wg.Wait()
 
 	if err != nil {
-		log.Println("Error in Create a movement: " + err.Error())
+		return false, err
 	}
 
-	if succes == false {
-		log.Println("Error in Create a movement")
-	}
+	wg.Add(2)
+	go func() {
+		//Make movement
+		change += "Modify user " + m.UserID.String()
 
-	s.UpdateUserCache(ID)
+		succes, err := grpc.CreateMovement("User & Profile", change, "User Service")
+
+		if err != nil {
+			log.Println("Error in Create a movement: " + err.Error())
+		}
+
+		if succes == false {
+			log.Println("Error in Create a movement")
+		}
+		wg.Done()
+	}()
+	go func() {
+		s.UpdateUserCache(ID)
+		wg.Done()
+	}()
+
+	wg.Wait()
 
 	return true, nil
 }
@@ -191,63 +210,99 @@ func (s *UserStorageService) ModifyUsername(ID string, currentUsername string, n
 			//change username
 			UserChange := &models.User{UserName: newUsername, UpdatedAt: time.Now()}
 
+			var wg sync.WaitGroup
+
 			err = s.db.Model(&models.User{}).Where("user_id = ?", ID).Updates(&UserChange).Error
 
 			if err != nil {
 				return false, err
 			}
 
-			go s.UpdateUserCache(ID)
+			//Update Cache and create movement
+			wg.Add(3)
+			//Update Cache of User Service
+			go func() {
+				s.UpdateUserCache(ID)
+				wg.Done()
+			}()
+			//Update Cache of Auth Service
+			go func() {
+				success, err := grpc.UpdateAuthCache(currentUsername, newUsername, "", "")
 
-			success, err := grpc.UpdateAuthCache(currentUsername, newUsername, "", "")
+				if err != nil || success == false {
+					log.Println("Error in Update the Auth Cache " + err.Error())
+				}
+				wg.Done()
+			}()
+			//Create movement
+			go func() {
+				//Movement of change of Username
+				var change string = "Modify UserName from " + currentUsername + " to " + newUsername
 
-			if err != nil || success == false {
-				log.Println("Error in Update the Auth Cache " + err.Error())
-			}
+				success, err := grpc.CreateMovement("User", change, "User Service")
 
-			//Movement of change of Username
-			var change string = "Modify UserName from " + currentUsername + " to " + newUsername
+				if err != nil {
+					log.Println("Error in Create a movement: " + err.Error())
+				}
 
-			success, err = grpc.CreateMovement("User", change, "User Service")
+				if success == false {
+					log.Println("Error in Create a movement")
+				}
+				wg.Done()
+			}()
 
-			if err != nil {
-				log.Println("Error in Create a movement: " + err.Error())
-			}
+			wg.Wait()
 
-			if success == false {
-				log.Println("Error in Create a movement")
-			}
+			var err error
 
-			//Modify username in from relations
-			fromRelationChange := &models.Relation{FromName: newUsername, UpdatedAt: time.Now()}
+			//Update relations of boths Users
+			wg.Add(2)
+			go func() {
+				//Modify username in from relations
+				fromRelationChange := &models.Relation{FromName: newUsername, UpdatedAt: time.Now()}
 
-			err = s.db.Model(&models.Relation{}).Where("from_name = ?", currentUsername).Updates(&fromRelationChange).Error
+				err = s.db.Model(&models.Relation{}).Where("from_name = ?", currentUsername).Updates(&fromRelationChange).Error
+				wg.Done()
+			}()
+			go func() {
+				//Modify Username in to Relations
+				toRelationChange := &models.Relation{ToName: newUsername, UpdatedAt: time.Now()}
+
+				err = s.db.Model(&models.Relation{}).Where("to_name = ?", currentUsername).Updates(&toRelationChange).Error
+				wg.Done()
+			}()
+
+			wg.Wait()
 
 			if err != nil {
 				return false, err
 			}
 
-			//Modify Username in to Relations
-			toRelationChange := &models.Relation{ToName: newUsername, UpdatedAt: time.Now()}
+			//Create movement and update Cahce
+			wg.Add(2)
+			//Update Relations Cache
+			go func() {
+				err = s.UpdateRelations(ID)
+				wg.Done()
+			}()
+			//Create new Movement
+			go func() {
+				success, err := grpc.CreateMovement("Relations", "Modify UserName in relations: "+currentUsername, "User Service")
 
-			err = s.db.Model(&models.Relation{}).Where("to_name = ?", currentUsername).Updates(&toRelationChange).Error
+				if err != nil {
+					log.Println("Error in Create a movement: " + err.Error())
+				}
+
+				if success == false {
+					log.Println("Error in Create a movement")
+				}
+				wg.Done()
+			}()
+
+			wg.Wait()
 
 			if err != nil {
 				return false, err
-			}
-
-			if err := s.UpdateRelations(ID); err != nil {
-				return false, err
-			}
-
-			success, err = grpc.CreateMovement("Relations", "Modify UserName in relations: "+currentUsername, "User Service")
-
-			if err != nil {
-				log.Println("Error in Create a movement: " + err.Error())
-			}
-
-			if success == false {
-				log.Println("Error in Create a movement")
 			}
 
 			return true, nil
@@ -367,7 +422,6 @@ func (s *UserStorageService) GetRelations(ID string, page int) ([]*models.Relati
 
 //AddRelation Create a new Relation
 func (s *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error) {
-
 	//Check if exits a relation but is not mutual
 	exits, err := s.CheckMutualRelation(r.FromName, r.FromID, r.ToName)
 
@@ -452,17 +506,40 @@ func (s *UserStorageService) AddRelation(r *models.RelationRequest) (bool, error
 		return false, err
 	}
 
-	//Create Movement
-	var change string = "Create a new Relation between " + newRelation.FromName + " & " + newRelation.ToName
+	var wg sync.WaitGroup
 
-	succes, err := grpc.CreateMovement("Relations", change, "User Service")
+	wg.Add(3)
+	//Update relations for From user
+	go func() {
+		err = s.UpdateRelations(r.FromID)
+		wg.Done()
+	}()
+	//update relations for To user
+	go func() {
+		err = s.UpdateRelations(toID)
+		wg.Done()
+	}()
+	//Create new movement
+	go func() {
+		//Create Movement
+		var change string = "Create a new Relation between " + newRelation.FromName + " & " + newRelation.ToName
+
+		succes, err := grpc.CreateMovement("Relations", change, "User Service")
+
+		if err != nil {
+			log.Println("Error in Create a movement: " + err.Error())
+		}
+
+		if succes == false {
+			log.Println("Error in Create a movement")
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
 
 	if err != nil {
-		log.Println("Error in Create a movement: " + err.Error())
-	}
-
-	if succes == false {
-		log.Println("Error in Create a movement")
+		return false, err
 	}
 
 	return true, nil
@@ -477,11 +554,11 @@ func (s *UserStorageService) DeactivateRelation(relationID string, FromID string
 
 	var relationDB *models.Relation = new(models.Relation)
 
-	s.db.Where("relation_id = ? AND from_user = ? AND to_user = ?", relationID, FromID, ToID).
-		Or("relation_id = ? AND from_user = ? AND to_user = ? AND mutual = true", relationID, ToID, FromID).First(&relationDB)
+	err := s.db.Where("relation_id = ? AND from_user = ? AND to_user = ?", relationID, FromID, ToID).
+		Or("relation_id = ? AND from_user = ? AND to_user = ? AND mutual = true", relationID, ToID, FromID).First(&relationDB).Error
 
-	if s.db.Error != nil {
-		return false, s.db.Error
+	if err != nil {
+		return false, err
 	}
 
 	relationDB.IsActive = false
@@ -491,21 +568,37 @@ func (s *UserStorageService) DeactivateRelation(relationID string, FromID string
 		return false, err
 	}
 
-	if err := s.UpdateRelations(relationDB.FromUser.String()); err != nil {
-		return false, err
-	}
-	if err := s.UpdateRelations(relationDB.ToUser.String()); err != nil {
-		return false, err
-	}
+	var wg sync.WaitGroup
 
-	succes, err := grpc.CreateMovement("Relations", "Deactive Relation: "+relationDB.RelationID.String(), "User Service")
+	wg.Add(3)
+
+	//Update Relations
+	go func() {
+		err = s.UpdateRelations(relationDB.FromUser.String())
+		wg.Done()
+	}()
+	go func() {
+		err = s.UpdateRelations(relationDB.ToUser.String())
+		wg.Done()
+	}()
+	//Create movement
+	go func() {
+		succes, err := grpc.CreateMovement("Relations", "Deactive Relation: "+relationDB.RelationID.String(), "User Service")
+
+		if err != nil {
+			log.Println("Error in Create a movement: " + err.Error())
+		}
+
+		if succes == false {
+			log.Println("Error in Create a movement")
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
 
 	if err != nil {
-		log.Println("Error in Create a movement: " + err.Error())
-	}
-
-	if succes == false {
-		log.Println("Error in Create a movement")
+		return false, err
 	}
 
 	return true, nil

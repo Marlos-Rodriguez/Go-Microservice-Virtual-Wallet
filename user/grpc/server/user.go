@@ -44,8 +44,6 @@ func (s *Server) CheckUser(ctx context.Context, request *UserRequest) (*UserResp
 		return &UserResponse{Exits: false, Active: false}, err
 	}
 
-	storageService.CloseDB()
-
 	return &UserResponse{Exits: exits, Active: isActive}, nil
 }
 

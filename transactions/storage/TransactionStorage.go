@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -130,16 +131,26 @@ func (s *TransactionStorageService) CreateTransaction(transaction models.Transac
 		return nil, false, err
 	}
 
-	movement := fmt.Sprintf("Trasaction of %.2f from %s to %s", transaction.Amount, transaction.FromName, transaction.ToName)
-
-	//Create Movement
-	if success, err := grpcClient.CreateMovement("User, Profile & Transaction", movement, "Transaction Service"); !success || err != nil {
-		log.Println("Error in create Movement in Transaction service")
-	}
+	var wg sync.WaitGroup
 
 	//Update Cache
-	go s.UpdateTransactionCache(transaction.FromUser)
-	s.UpdateTransactionCache(transaction.ToUser)
+	go func() {
+		s.UpdateTransactionCache(transaction.FromUser)
+		wg.Done()
+	}()
+	go func() {
+		s.UpdateTransactionCache(transaction.ToUser)
+		wg.Done()
+	}()
+	go func() {
+		movement := fmt.Sprintf("Trasaction of %.2f from %s to %s", transaction.Amount, transaction.FromName, transaction.ToName)
+
+		//Create Movement
+		if success, err := grpcClient.CreateMovement("User, Profile & Transaction", movement, "Transaction Service"); !success || err != nil {
+			log.Println("Error in create Movement in Transaction service")
+		}
+		wg.Done()
+	}()
 
 	TransactionResponse := models.TransactionWebResponse{
 		TsID:      newTransaction.TsID.String(),
@@ -151,6 +162,8 @@ func (s *TransactionStorageService) CreateTransaction(transaction models.Transac
 		Message:   newTransaction.Message,
 		CreatedAt: newTransaction.CreatedAt.String(),
 	}
+
+	wg.Wait()
 
 	return &TransactionResponse, true, nil
 }
