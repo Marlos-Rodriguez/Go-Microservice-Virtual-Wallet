@@ -17,7 +17,7 @@ import (
 type Server struct {
 }
 
-var storageService storage.UserStorageService
+var storageService storage.IUserStorageService
 
 //GetStorageService Start the storage service for GPRC server
 func GetStorageService() {
@@ -81,6 +81,7 @@ func (s *Server) ChangeAvatar(ctx context.Context, request *AvatarName) (*Avatar
 
 //CheckUsersTransactions Check if the transaction is valid
 func (s *Server) CheckUsersTransactions(ctx context.Context, request *CheckTransactionRequest) (*TransactionResponse, error) {
+	//Check Input
 	if request.FromID == "" || request.ToID == "" || request.Amount <= 0 || request.Password == "" {
 		return &TransactionResponse{
 			Exits:   false,
@@ -88,6 +89,7 @@ func (s *Server) CheckUsersTransactions(ctx context.Context, request *CheckTrans
 			Enough:  false,
 		}, errors.New("No valid Input")
 	}
+	//Get user info
 	fromUser, err := storageService.GetUser(request.FromID)
 
 	if fromUser == nil || err != nil {
@@ -98,6 +100,7 @@ func (s *Server) CheckUsersTransactions(ctx context.Context, request *CheckTrans
 		}, err
 	}
 
+	//Check Password
 	if success, err := storageService.CheckPassword(request.FromID, request.Password); !success || err != nil {
 		return &TransactionResponse{
 			Exits:   false,
@@ -106,6 +109,7 @@ func (s *Server) CheckUsersTransactions(ctx context.Context, request *CheckTrans
 		}, err
 	}
 
+	//Check Balance
 	if fromUser.Balance <= 0 || fromUser.Balance < request.Amount {
 		return &TransactionResponse{
 			Exits:   false,
@@ -114,6 +118,7 @@ func (s *Server) CheckUsersTransactions(ctx context.Context, request *CheckTrans
 		}, errors.New("User not have enough balance")
 	}
 
+	//Check Active user
 	toUser, err := storageService.GetUser(request.ToID)
 
 	if toUser == nil || err != nil {

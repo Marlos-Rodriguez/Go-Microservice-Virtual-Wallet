@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jinzhu/gorm"
 )
 
 //DB models use to create the tables
@@ -19,6 +20,12 @@ type User struct {
 	Profile   Profile   `gorm:"not null;foreignkey:UserID;references:UserID"`
 }
 
+//AfterUpdate GORM Hook
+func (u *User) AfterUpdate(tx *gorm.DB) (err error) {
+	u.UpdatedAt = time.Now()
+	return
+}
+
 //Profile struct
 type Profile struct {
 	UserID    uuid.UUID `gorm:"unique_index;not null"`
@@ -32,6 +39,12 @@ type Profile struct {
 	CreatedAt time.Time `gorm:"not null"`
 	UpdatedAt time.Time `gorm:"not null"`
 	IsActive  bool      `gorm:"not null;default:false"`
+}
+
+//AfterUpdate GORM Hook
+func (p *Profile) AfterUpdate(tx *gorm.DB) (err error) {
+	p.UpdatedAt = time.Now()
+	return
 }
 
 //Relation struct

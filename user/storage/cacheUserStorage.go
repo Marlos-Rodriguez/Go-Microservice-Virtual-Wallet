@@ -47,7 +47,7 @@ func (s *UserStorageService) GetUserCache(ID string) (*models.UserResponse, erro
 		userBytes, _ := val.Bytes()
 		json.Unmarshal(userBytes, &userDB)
 
-		if userDB.IsActive == false {
+		if !userDB.IsActive {
 			return nil, err
 		}
 

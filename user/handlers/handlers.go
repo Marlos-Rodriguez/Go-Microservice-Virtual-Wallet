@@ -18,7 +18,7 @@ import (
 
 //UserhandlerService struct
 type UserhandlerService struct {
-	StorageService storage.UserStorageService
+	StorageService storage.IUserStorageService
 }
 
 //NewUserhandlerService Create new user handler
