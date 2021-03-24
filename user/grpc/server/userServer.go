@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/net/context"
 
@@ -63,14 +64,21 @@ func (s *Server) CheckRelation(ctx context.Context, request *RelationRequest) (*
 }
 
 //ChangeAvatar Change the avatar in DB
-func (s *Server) ChangeAvatar(ctx context.Context, request *AvatarName) (*AvatarResponse, error) {
-	if len(request.Name) < 0 || request.Name == "" {
+func (s *Server) ChangeAvatar(ctx context.Context, request *AvatarRequest) (*AvatarResponse, error) {
+	if len(request.ID) < 0 || request.Url == "" {
 		return &AvatarResponse{Sucess: false}, errors.New("Must send the avatar name")
 	}
 
 	var userDB *models.User = new(models.User)
 
-	userDB.Profile.Avatar = request.Name
+	userID, err := uuid.Parse(request.ID)
+
+	if err != nil {
+		return &AvatarResponse{Sucess: false}, err
+	}
+
+	userDB.Profile.Avatar = request.Url
+	userDB.Profile.UserID = userID
 
 	if sucess, err := storageService.ModifyUser(userDB, "", ""); sucess == false || err != nil {
 		return &AvatarResponse{Sucess: false}, err

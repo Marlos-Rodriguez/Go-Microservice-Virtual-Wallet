@@ -4,7 +4,7 @@
 // 	protoc        v3.15.6
 // source: models/user.proto
 
-package proto
+package server
 
 import (
 	context "context"
