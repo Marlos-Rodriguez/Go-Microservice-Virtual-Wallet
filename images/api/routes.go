@@ -5,7 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/images/handlers"
-	//"github.com/Marlos-Rodriguez/go-postgres-wallet-back/images/internal/middlewares"
+	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/images/internal/middlewares"
 )
 
 func routes() *fiber.App {
@@ -17,7 +17,7 @@ func routes() *fiber.App {
 
 	user.Use(cors.New())
 
-	user.Post("/:id" /*middlewares.JWTMiddleware(),*/, handler.ChangeAvatar) //Recibe Avatar and changed
+	user.Post("/:id", middlewares.JWTMiddleware(), handler.ChangeAvatar) //Recibe Avatar and changed
 
 	return app
 }

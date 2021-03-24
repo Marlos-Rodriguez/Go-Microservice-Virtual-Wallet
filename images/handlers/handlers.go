@@ -6,15 +6,16 @@ import (
 	"image/jpeg"
 	"image/png"
 
-	//internalJWT "github.com/Marlos-Rodriguez/go-postgres-wallet-back/images/internal/jwt"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/images/grpc/client"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/images/internal/environment"
+	internalJWT "github.com/Marlos-Rodriguez/go-postgres-wallet-back/images/internal/jwt"
 
-	//"github.com/form3tech-oss/jwt-go"
+	"github.com/form3tech-oss/jwt-go"
 	"github.com/gofiber/fiber/v2"
 
 	//AWS
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
@@ -28,15 +29,19 @@ type ImagesHandlerService struct {
 }
 
 var (
-	AWS_S3_REGION = environment.AccessENV("AWS_S3_REGION")
-	AWS_S3_BUCKET = environment.AccessENV("AWS_S3_BUCKET")
+	AWS_S3_REGION   = environment.AccessENV("AWS_S3_REGION")
+	AWS_S3_BUCKET   = environment.AccessENV("AWS_S3_BUCKET")
+	AWS_ACCESS_KEY  = environment.AccessENV("AWS_ACCESS_KEY")
+	AWS_SECRECT_KEY = environment.AccessENV("AWS_SECRECT_KEY")
 )
 
 //NewImageshandlerService Create a new handler to work with form-data and AWS
 func NewImageshandlerService() IimagesHandlerService {
 	go client.StartClient()
 
-	newSession, err := session.NewSession(&aws.Config{Region: aws.String(AWS_S3_REGION)})
+	newSession, err := session.NewSession(&aws.Config{Region: aws.String(AWS_S3_REGION),
+		Credentials: credentials.NewStaticCredentials(AWS_ACCESS_KEY, AWS_SECRECT_KEY, ""),
+	})
 	if err != nil {
 		return nil
 	}
@@ -52,16 +57,15 @@ func (s *ImagesHandlerService) ChangeAvatar(c *fiber.Ctx) error {
 		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Review your input"})
 	}
 
-	/*
-		//Check the JWT ID
-		tk := c.Locals("user").(*jwt.Token)
-		if err := internalJWT.GetClaims(*tk); err != nil {
-			return c.Status(fiber.ErrBadGateway.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
-		}
+	//Check the JWT ID
+	tk := c.Locals("user").(*jwt.Token)
+	if err := internalJWT.GetClaims(*tk); err != nil {
+		return c.Status(fiber.ErrBadGateway.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
 
-		if match, err := internalJWT.CheckID(ID); !match || err != nil {
-			return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
-		}*/
+	if match, err := internalJWT.CheckID(ID); !match || err != nil {
+		return c.Status(fiber.ErrBadRequest.Code).JSON(fiber.Map{"status": "error", "message": "Error in process JWT", "data": err.Error()})
+	}
 
 	//Get the Image from form-Data
 	fileHeader, err := c.FormFile("avatar")
@@ -117,9 +121,10 @@ func (s *ImagesHandlerService) ChangeAvatar(c *fiber.Ctx) error {
 	uploader := s3manager.NewUploader(s.AmazonSession)
 
 	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(AWS_S3_BUCKET), // Bucket to be used
-		Key:    aws.String(ID + ".jpeg"),  // Name of the file to be saved
-		Body:   &byteContainer,            // File
+		Bucket:      aws.String(AWS_S3_BUCKET), // Bucket to be used
+		Key:         aws.String(ID + ".jpeg"),  // Name of the file to be saved
+		Body:        &byteContainer,            // File
+		ContentType: aws.String("image/jpeg"),
 	})
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Error in sending to AWS S3", "data": err.Error()})

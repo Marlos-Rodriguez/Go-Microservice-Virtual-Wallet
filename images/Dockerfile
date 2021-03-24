@@ -12,7 +12,7 @@ RUN go mod download
 
 COPY . .
 
-ENV USER_PORT 3000
+ENV USER_PORT 3003
 
 RUN go build cmd/main.go
 
@@ -22,6 +22,6 @@ WORKDIR /root/
 
 COPY --from=builder /apps/service .
 
-EXPOSE 3000
+EXPOSE 3003
 
 CMD ["./main"]
