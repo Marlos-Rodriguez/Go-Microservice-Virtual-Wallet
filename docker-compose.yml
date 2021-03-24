@@ -132,6 +132,22 @@ services:
     networks:
       - fullstack-wallet-services
       - fullstack-wallet-transaction
+  #transaction Service
+  images-service:
+    build: "./images"
+    container_name: images-service
+    depends_on:
+      - user-service
+      - movements-service
+    links:
+      - user-service
+      - movements-service
+    ports:
+      - 3003:3003
+    env_file:
+      - ./internal/images.env
+    networks:
+      - fullstack-wallet-services
   webserver:
     image: nginx:latest
     container_name: webserver
@@ -141,7 +157,7 @@ services:
       - user-service
       - movements-service
       - auth-service
-      - transaction-service
+      - images-service
     ports:
       - 8000:80
     networks:

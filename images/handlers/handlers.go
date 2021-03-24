@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
+	"log"
 
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/images/grpc/client"
 	"github.com/Marlos-Rodriguez/go-postgres-wallet-back/images/internal/environment"
@@ -117,6 +118,13 @@ func (s *ImagesHandlerService) ChangeAvatar(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Error in compress the image", "data": err.Error()})
 	}
 
+	var change string = "User with ID" + ID + "Upload a avatar image"
+
+	//Create movement
+	if success, err := client.CreateMovement("User & Profile", change, "Image service"); !success || err != nil {
+		log.Println("Error in create movement: " + err.Error())
+	}
+
 	//upload to AWS
 	uploader := s3manager.NewUploader(s.AmazonSession)
 
@@ -128,6 +136,13 @@ func (s *ImagesHandlerService) ChangeAvatar(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Error in sending to AWS S3", "data": err.Error()})
+	}
+
+	change = "Image of ID " + ID + "was Upload to S3"
+
+	//Create movement
+	if success, err := client.CreateMovement("User & Profile", change, "Image service"); !success || err != nil {
+		log.Println("Error in create movement: " + err.Error())
 	}
 
 	//Call to User service to change
